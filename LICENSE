@@ -1,0 +1,19 @@
+Copyright (c) 2026 Johan Socarras. All Rights Reserved.
+
+This repository is published for informational and portfolio purposes
+only. It documents the Mirryl product (architecture, features, and
+development history) and does not contain the application's source
+code.
+
+No license, express or implied, is granted to any person to copy,
+reproduce, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the content of this repository, or of the Mirryl application
+and its underlying source code, without prior written permission from
+the copyright holder.
+
+"Mirryl" and its logo are trademarks of Johan Socarras. All rights
+reserved.
+
+Third-party components used inside the compiled Mirryl application are
+separately licensed under their own terms; see the application's
+"Third-party licenses" screen for the full list and attributions.
