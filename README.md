@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="mirryl-icon-256.png" width="120" alt="Mirryl icon" />
+</p>
+
 # Mirryl
 
 **Persistent wireless ADB desktop companion for Android developers and power users.**
