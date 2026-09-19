@@ -10,7 +10,7 @@ Pair an Android phone with a Windows PC once, over Wi-Fi with a QR code or over
 USB, and Mirryl keeps the `adb` connection alive by itself. Mirror the screen and
 control the phone from the desktop while you are there.
 
-**[Download for Windows](https://mirryl.com/#downloads)** — 1.0.1, ~15 MB, free
+**[Download for Windows](https://mirryl.com/#downloads)** — 1.0.10, ~15 MB, free
 for six months per computer.
 
 > Showcase repository: product documentation only, **no application source
@@ -22,9 +22,9 @@ for six months per computer.
 
 | | |
 |---|---|
-| Latest release | **1.0.1** (7 September 2026) |
+| Latest release | **1.0.10** (18 September 2026) |
 | Platform | 64-bit Windows 10 / 11 |
-| Size | ~15 MB (15,344,587 bytes) |
+| Size | ~15 MB (15,373,977 bytes) |
 | Price | Free for six months per computer — no account, no license key, no card |
 | Get it | **[mirryl.com](https://mirryl.com/#downloads)** |
 
@@ -50,8 +50,8 @@ Android's own wireless debugging.
 > downloaded from. Check what you got before running it:
 >
 > ```
-> certutil -hashfile Mirryl-Setup-1.0.1.exe SHA256
-> D5490771F4EEFF47B2A981BAA9ED7FD97FA00585666F6F0D5B91D14B568D54D6
+> certutil -hashfile Mirryl-Setup-1.0.10.exe SHA256
+> 41588776494934AD91B6D71AF4118DFB3399C002D5DB0962265D420FBA47AE70
 > ```
 
 ## What it does
@@ -116,7 +116,7 @@ wireless debugging back on after a reboot.
 
 ## Project status
 
-**Released.** Mirryl 1.0.1 (7 September 2026) is public and downloadable from
+**Released.** Mirryl 1.0.10 (18 September 2026) is public and downloadable from
 [mirryl.com](https://mirryl.com/#downloads); the site has been open since
 3 September 2026. The activation and licensing service is deployed, and the legal
 documents (EULA, privacy policy, license) are published at
@@ -137,6 +137,9 @@ Still open, and worth saying plainly:
 
 | Version | Date | Notes |
 |---|---|---|
+| 1.0.10 | 18 September 2026 | Fixes-only release. Mirror control no longer drops after 30 s without input (1.0.5); the update no longer fails on a file held by a running `adb`; the "Send file" picker no longer freezes the window; the watchdog re-stamps connected phones on its own; clearer notices (setup repair, matriculation limit). Android helper 1.0.10 (versionCode 18) |
+| 1.0.5 | 18 September 2026 | Fixes-only release. Phone-side agent no longer outlives the engine; watchdog handles several phones by serial |
+| 1.0.3 | 17 September 2026 | Fixes-only release. Engine 0.1.15: no more black mirror window — every agent failure is reported with its reason, and the encoder negotiates a size the phone accepts |
 | 1.0.1 | 7 September 2026 | Fixes-only release; Android bug-report capture removed |
 | 1.0.0 | 3 September 2026 | First public release |
 
