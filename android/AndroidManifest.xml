@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.mirryl.app"
+    android:versionCode="27"
+    android:versionName="1.0.12">
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <!-- No INTERNET: the app opens no sockets. Wireless debugging is a system
+         service, and the network jobs only need ACCESS_NETWORK_STATE. -->
+    <!-- No REQUEST_IGNORE_BATTERY_OPTIMIZATIONS: Mirryl on
+         the PC adds this app to the battery whitelist over adb when it
+         connects (see WifiAdbHelper.isIgnoringBatteryOptimizations). -->
+
+    <!-- The PIN screen names the app it protects: this makes the apps with an
+         icon in the app drawer visible to this one (package visibility). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.LAUNCHER"/>
+        </intent>
+    </queries>
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/AppTheme"
+        android:allowBackup="false">
+
+        <activity
+            android:name="com.mirryl.app.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name="com.mirryl.app.BootReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <!-- Re-arms the switch watch after an update: it is not
+                     persisted, so an update leaves it unarmed. -->
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="com.mirryl.app.AlarmReceiver"
+            android:exported="false"
+            android:enabled="true"/>
+
+        <!-- Runs two jobs: the switch watch (started when Android turns
+             Wireless debugging off and a network is back - the fast path,
+             WifiAdbHelper.scheduleSwitchWatch) and the one-minute network job
+             behind it. BIND_JOB_SERVICE is required by the platform for any
+             JobService. -->
+        <service
+            android:name="com.mirryl.app.NetworkJobService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false"/>
+
+        <!-- PIN protection for chosen apps (AppLock). The service sees which
+             app comes to the front; Mirryl on the PC turns it on over adb. -->
+        <service
+            android:name="com.mirryl.app.AppLockService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/app_lock_service"/>
+        </service>
+
+        <activity
+            android:name="com.mirryl.app.LockActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity="com.mirryl.app.lock"
+            android:launchMode="singleTask"/>
+
+        <!-- Mirryl on the PC sets the protection through here. Only a sender
+             with WRITE_SECURE_SETTINGS (adb's shell) is let in. -->
+        <receiver
+            android:name="com.mirryl.app.LockConfigReceiver"
+            android:exported="true"
+            android:permission="android.permission.WRITE_SECURE_SETTINGS"/>
+    </application>
+</manifest>

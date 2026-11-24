@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "targets": ["deb"],
+    "category": "Utility",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png"
+    ],
+    "resources": {
+      "watcher.ps1": null,
+      "engine/mirryl-engine.exe": null,
+      "engine/WebView2Loader.dll": null,
+      "platform-tools/adb.exe": null,
+      "platform-tools/AdbWinApi.dll": null,
+      "platform-tools/AdbWinUsbApi.dll": null,
+      "platform-tools/NOTICE.txt": null,
+      "engine/mirryl-engine": "engine/mirryl-engine",
+      "THIRD_PARTY_LICENSES.txt": null,
+      "COMPONENT-INVENTORY.txt": null,
+      "THIRD_PARTY_LICENSES-linux.txt": "THIRD_PARTY_LICENSES.txt",
+      "COMPONENT-INVENTORY-linux.txt": "COMPONENT-INVENTORY.txt",
+      "PRIVACY.txt": null,
+      "PRIVACY-linux.txt": "PRIVACY.txt"
+    },
+    "shortDescription": "Mirror and control an Android phone from the PC",
+    "longDescription": "Mirryl shows an Android phone on the PC screen and lets you control it with the mouse and keyboard, over USB or Wi-Fi.",
+    "linux": {
+      "deb": {
+        "depends": [
+          "adb",
+          "zenity",
+          "gstreamer1.0-libav",
+          "gstreamer1.0-plugins-good"
+        ]
+      }
+    }
+  }
+}

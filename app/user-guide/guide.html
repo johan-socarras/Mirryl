@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mirryl - User guide</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 16mm 15mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Inter, Arial, sans-serif; color: #101426; font-size: 10.5pt; line-height: 1.5; margin: 0; }
+  .cover { height: 250mm; display: flex; flex-direction: column; justify-content: center; page-break-after: always; }
+  .cover .eyebrow { font-family: Consolas, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #616983; font-size: 10pt; }
+  .cover h1 { font-size: 34pt; margin: 6mm 0 3mm; }
+  .cover p { font-size: 13pt; color: #616983; max-width: 140mm; }
+  .bar { height: 4px; width: 60mm; border-radius: 2px; background: linear-gradient(90deg, #087f98, #6253db); margin-top: 8mm; }
+  h2 { font-size: 17pt; margin: 0 0 3mm; padding-top: 2mm; color: #101426; page-break-after: avoid; }
+  h2 .n { color: #07717f; margin-right: 3mm; }
+  h3 { font-size: 12pt; margin: 5mm 0 1.5mm; page-break-after: avoid; }
+  section { page-break-before: always; }
+  section.flow { page-break-before: auto; margin-top: 8mm; }
+  img { width: 100%; border: 1px solid rgba(23,31,57,0.15); border-radius: 6px; margin: 2mm 0 3mm; }
+  img.half { width: 55%; }
+  img.narrow { width: 34%; }
+  img.wide { width: 82%; }
+  table { width: 100%; border-collapse: collapse; margin: 2mm 0 3mm; page-break-inside: avoid; }
+  td, th { text-align: left; vertical-align: top; padding: 1.6mm 2mm; border-bottom: 1px solid rgba(23,31,57,0.12); }
+  th { font-size: 9pt; text-transform: uppercase; letter-spacing: 0.05em; color: #616983; }
+  td:first-child { width: 33%; font-weight: 600; }
+  .k { font-family: Consolas, monospace; font-size: 9.5pt; background: #eef1fb; border: 1px solid rgba(23,31,57,0.15); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+  .note { background: rgba(138, 90, 0, 0.08); border: 1px solid rgba(138, 90, 0, 0.28); border-radius: 6px; padding: 2.5mm 3.5mm; margin: 3mm 0; page-break-inside: avoid; }
+  .tip { background: rgba(7, 113, 127, 0.07); border: 1px solid rgba(7, 113, 127, 0.25); border-radius: 6px; padding: 2.5mm 3.5mm; margin: 3mm 0; page-break-inside: avoid; }
+  ol, ul { margin: 1mm 0 3mm; padding-left: 6mm; }
+  li { margin-bottom: 1mm; }
+  .toc li { margin-bottom: 0.6mm; }
+  code { font-family: Consolas, monospace; font-size: 9.5pt; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="eyebrow">Mirryl 1.0.12 · Windows</div>
+  <h1>User guide</h1>
+  <p>What every screen and button of Mirryl does: mirroring your Android phones on this PC, and managing their apps - one phone or many.</p>
+  <div class="bar"></div>
+</div>
+
+<section style="page-break-before:auto">
+  <h2>Contents</h2>
+  <ol class="toc">
+    <li>Before you start</li>
+    <li>The main window</li>
+    <li>Adding a phone</li>
+    <li>Mirroring a phone</li>
+    <li>The quick menu of a phone</li>
+    <li>Several phones at once</li>
+    <li>The phone's page</li>
+    <li>The Apps screen</li>
+    <li>What can be done to an app</li>
+    <li>Several apps at once</li>
+    <li>PIN protection</li>
+    <li>Profiles</li>
+    <li>Info</li>
+    <li>Settings</li>
+    <li>About and licenses</li>
+    <li>When something goes wrong</li>
+  </ol>
+
+  <section class="flow">
+  <h2><span class="n">1</span>Before you start</h2>
+  <p>Mirryl shows the screen of an Android phone on this PC and lets you use it with the mouse and keyboard, over the USB cable or over your own Wi-Fi. It also lets you manage the phone's apps from the PC. Nothing goes over the internet.</p>
+  <ul>
+    <li><b>The phone</b> needs Android 11 or newer and <b>Developer options</b> turned on (Settings &gt; About phone &gt; tap <i>Build number</i> seven times).</li>
+    <li><b>Over Wi-Fi</b>, the phone and the PC must be on the same network, and the phone needs <b>Wireless debugging</b> on (Settings &gt; Developer options).</li>
+    <li><b>Over USB</b>, the phone needs <b>USB debugging</b> on, and the first time it asks you to allow this PC.</li>
+    <li><b>The Mirryl app on the phone</b> keeps Wireless debugging on, so the phone comes back by itself after a reboot or a Wi-Fi drop. Mirryl on the PC installs it for you.</li>
+  </ul>
+  </section>
+</section>
+
+<section>
+  <h2><span class="n">2</span>The main window</h2>
+  <img src="img/01-home.png">
+  <h3>The bar on the far left</h3>
+  <table>
+    <tr><td>House</td><td>Always goes back to this main screen, from anywhere.</td></tr>
+    <tr><td>+</td><td>Adds a phone (section 3).</td></tr>
+    <tr><td>(i) at the bottom</td><td>About and licenses, and this user guide (section 15).</td></tr>
+    <tr><td>Gear at the bottom</td><td>Settings: theme and keyboard shortcuts (section 14).</td></tr>
+  </table>
+  <h3>The list of phones</h3>
+  <table>
+    <tr><td>Search box</td><td>Finds a phone by its name, serial number or address.</td></tr>
+    <tr><td>All statuses</td><td>Shows only the phones connected by USB, by Wi-Fi, or disconnected.</td></tr>
+    <tr><td>Name (A-Z)</td><td>Sorts the list: by name, by when each was last seen, or by when it was added.</td></tr>
+    <tr><td>Select</td><td>Lets you tick several phones and act on all of them at once (section 6). The search, filter and Select appear when you have two phones or more.</td></tr>
+    <tr><td>Icon and state</td><td>Wi-Fi or cable, and <i>Connected</i>, <i>Connecting</i>, <i>Disconnected</i> or <i>Mirroring</i>.</td></tr>
+    <tr><td>Connect</td><td>On a disconnected phone: connects to it over Wi-Fi.</td></tr>
+    <tr><td>Mirror / Show</td><td>Opens the phone's screen in a tab (section 4). <i>Show</i> means it is already open: it takes you to its tab.</td></tr>
+    <tr><td>⋮ (three dots)</td><td>Opens the phone's page: its apps, its information and everything that can be done to it (section 7).</td></tr>
+    <tr><td>Clicking the row</td><td>The same as Mirror.</td></tr>
+    <tr><td>Right-click on the row</td><td>A short menu of quick actions (section 5).</td></tr>
+  </table>
+  <p>The line at the very bottom counts your phones and says which one the open tab shows.</p>
+</section>
+
+<section>
+  <h2><span class="n">3</span>Adding a phone</h2>
+  <img src="img/12-add-device.png">
+  <h3>Step 1 - Pair with the phone</h3>
+  <ul>
+    <li><b>Scan QR code</b>: on the phone open <i>Wireless debugging &gt; Pair device with QR code</i> and point its camera at the code. Mirryl finishes by itself.</li>
+    <li><b>Enter manually</b>: on the phone open <i>Wireless debugging &gt; Pair device with pairing code</i>, type the <b>IP:Port</b> and the <b>6-digit code</b> it shows, and press <b>Pair device</b>.</li>
+    <li><b>By cable</b>: plug the phone in and accept <i>Allow USB debugging</i> on it. It appears at the bottom of the list as <i>Connected by cable - not added yet</i>; press <b>Add device</b>. No pairing needed.</li>
+    <li><b>First time? Turn on Wireless debugging on the phone</b> opens the steps to turn it on.</li>
+  </ul>
+  <h3>Step 2 - Connect</h3>
+  <ul>
+    <li><b>Connect &amp; grant permission</b> connects to the phone and gives the Mirryl app on it the permission to turn Wireless debugging back on by itself.</li>
+    <li><b>Install the Mirryl app on the phone</b> appears when the phone does not have it, or has an older one. It installs it from the copy Mirryl carries.</li>
+    <li><b>Auto-discover</b> looks for the phone's current address on the network.</li>
+    <li><b>Fix connection issues</b> repairs the Windows firewall rules Mirryl needs (it asks for administrator once). <b>Restart ADB</b> restarts the connection service when phones stop answering.</li>
+  </ul>
+  <p><b>Home</b>, <b>Back</b> and <b>Next</b> move between the steps. The <i>Live status</i> box shows what the connection service sees.</p>
+</section>
+
+<section>
+  <h2><span class="n">4</span>Mirroring a phone</h2>
+  <p>Press <b>Mirror</b> on a phone (or click its row). Its screen opens in a tab at the top of the window. Each phone has one tab; pressing Mirror again goes back to it.</p>
+  <h3>The buttons on the tab</h3>
+  <table>
+    <tr><td>Corners (Fill)</td><td>Makes the picture fill the whole tab, cutting the edges that do not fit. Press again to see the whole screen with bars.</td></tr>
+    <tr><td>⧉ (own window)</td><td>Moves the mirror to a window of its own, without reconnecting. In the tab, <b>Bring it back here</b> (or ⇲) returns it.</td></tr>
+    <tr><td>✕ (close)</td><td>Closes the mirror. A middle-click on the tab does the same.</td></tr>
+  </table>
+  <h3>Using the phone from the PC</h3>
+  <table>
+    <tr><td>Click</td><td>Taps the screen. Click and drag to swipe.</td></tr>
+    <tr><td>Right-click</td><td>Back.</td></tr>
+    <tr><td>Middle-click</td><td>Home.</td></tr>
+    <tr><td>Mouse wheel</td><td>Scrolls.</td></tr>
+    <tr><td>Keyboard</td><td>Types on the phone. <span class="k">Ctrl+A</span> <span class="k">Ctrl+C</span> <span class="k">Ctrl+X</span> <span class="k">Ctrl+Z</span> work as on the phone.</td></tr>
+    <tr><td>Copy and paste</td><td>Text is shared between the two clipboards while the mirror is open, both ways.</td></tr>
+    <tr><td>Sound</td><td>The phone's sound plays on the PC (Android 11 and newer). The microphone is never used.</td></tr>
+  </table>
+  <h3>Keyboard shortcuts (change them in Settings)</h3>
+  <table>
+    <tr><td><span class="k">Ctrl+S</span></td><td>Turns the phone's screen off while the mirror keeps running. Again to turn it back on.</td></tr>
+    <tr><td><span class="k">F1</span></td><td>Home screen.</td></tr>
+    <tr><td><span class="k">F2</span></td><td>Recent apps.</td></tr>
+    <tr><td><span class="k">Ctrl+R</span></td><td>Puts the window back to the shape of the picture.</td></tr>
+    <tr><td><span class="k">Ctrl+F</span></td><td>Fill the space, like the Fill button.</td></tr>
+  </table>
+  <p>If a phone mirrored over Wi-Fi is plugged in by cable, the mirror offers <b>Switch to USB</b> (smoother) or <b>Stay on Wi-Fi</b>.</p>
+</section>
+
+<section>
+  <h2><span class="n">5</span>The quick menu of a phone</h2>
+  <img class="half" src="img/02-row-menu.png">
+  <p>Right-click a phone in the list for the actions you use most, without leaving the screen you are on:</p>
+  <table>
+    <tr><td>Mirror / Show</td><td>Opens its screen, or goes to its tab.</td></tr>
+    <tr><td>Apps…</td><td>Opens the phone's page on its apps.</td></tr>
+    <tr><td>Send file</td><td>Copies a file from the PC to the phone's <i>Download</i> folder.</td></tr>
+    <tr><td>Restart device</td><td>Restarts the phone, after asking. It drops off for about half a minute and comes back by itself.</td></tr>
+  </table>
+
+  <section class="flow">
+  <h2><span class="n">6</span>Several phones at once</h2>
+  <img class="narrow" src="img/03-select-phones.png">
+  <p>Press <b>Select</b> above the list and tick the phones (the box at the top ticks every phone shown). The bar that appears acts on all the ticked phones:</p>
+  <table>
+    <tr><td>Send file</td><td>The same file to every phone.</td></tr>
+    <tr><td>Restart</td><td>Restarts every phone, after asking.</td></tr>
+    <tr><td>Remove</td><td>Removes them from Mirryl (not from anywhere else). They can be added again by pairing.</td></tr>
+    <tr><td>Install APK</td><td>Installs the .apk files you choose on every phone.</td></tr>
+    <tr><td>Apply profile</td><td>Applies a saved profile to every phone (section 12).</td></tr>
+    <tr><td>Export apps</td><td>Saves the apps of every phone in one CSV file for Excel (section 7).</td></tr>
+    <tr><td>Done</td><td>Leaves the selection.</td></tr>
+  </table>
+  <p>Phones that are not connected are skipped, and the summary at the end says so.</p>
+  </section>
+</section>
+
+<section>
+  <h2><span class="n">7</span>The phone's page</h2>
+  <p>The <b>⋮</b> of a phone opens its page. On the left, a column with everything about that phone; on the right, the screen you choose.</p>
+  <img src="img/04-device-apps.png">
+  <table>
+    <tr><td>Name and state</td><td>The phone's name, and whether it is connected or mirroring.</td></tr>
+    <tr><td>Mirror / Show</td><td>Opens its screen in a tab.</td></tr>
+    <tr><td>Apps</td><td>The apps of the phone (section 8).</td></tr>
+    <tr><td>Info</td><td>Battery, storage, Android version and more (section 13).</td></tr>
+    <tr><td>Send file</td><td>Copies a file from the PC to the phone's <i>Download</i> folder.</td></tr>
+    <tr><td>Restart device</td><td>Restarts the phone, after asking.</td></tr>
+    <tr><td>Reinstall the Mirryl app</td><td>Puts the Mirryl app back on the phone - for example, after someone uninstalled it there - with its permission, without pairing again. It also updates an older one.</td></tr>
+    <tr><td>PIN for protected apps…</td><td>Chooses or changes the PIN of this phone (section 11).</td></tr>
+    <tr><td>Save as profile…</td><td>Saves what this phone has blocked and protected as a profile (section 12).</td></tr>
+    <tr><td>Apply a profile…</td><td>Applies a saved profile to this phone.</td></tr>
+    <tr><td>Export apps (CSV)</td><td>Saves the list of the phone's apps in a CSV file for Excel, in <code>Documents\Mirryl\Inventory</code>, and shows it in Explorer. It says, for each app, its version, whether it came with the phone, whether it is blocked, off or behind the PIN, and when it was installed and updated.</td></tr>
+    <tr><td>Edit alias</td><td>Renames the phone in Mirryl. Type the new name and press Enter.</td></tr>
+    <tr><td>Re-pair this device</td><td>Opens the pairing steps again for this phone.</td></tr>
+    <tr><td>Forget Wi-Fi address</td><td>For a phone you only use by cable: Mirryl stops looking for it on the network. Shown only for phones with a Wi-Fi address.</td></tr>
+    <tr><td>Remove device</td><td>Removes the phone from Mirryl, after asking. You can tick <i>Also delete its saved files</i> to delete its folder in Documents\Mirryl too.</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="n">8</span>The Apps screen</h2>
+  <p>It reads the apps of the phone when it opens (a few seconds). A <b>click</b> on an app opens it on the phone and opens its mirror. A <b>right-click</b> opens everything that can be done to it (section 9).</p>
+  <table>
+    <tr><td>Search apps</td><td>Finds an app by its name or package name.</td></tr>
+    <tr><td>Apps</td><td>The apps with an icon on the phone, like its app drawer.</td></tr>
+    <tr><td>Installed</td><td>Only the apps installed on the phone, not the ones it came with.</td></tr>
+    <tr><td>System</td><td>The apps that came with the phone, including the ones with no icon.</td></tr>
+    <tr><td>Blocked or off</td><td>The apps that are blocked or turned off.</td></tr>
+    <tr><td>Install an APK…</td><td>Installs .apk files from the PC on the phone. You can also drop .apk files on the screen.</td></tr>
+    <tr><td>Select</td><td>Lets you tick several apps (section 10).</td></tr>
+    <tr><td>Refresh</td><td>Reads the apps again.</td></tr>
+    <tr><td>Open in Play Store</td><td>Type the name of an app and the phone's Play Store opens with that search. Installing from there is a tap on the phone: Android does not allow it from a computer.</td></tr>
+  </table>
+  <h3>The marks under an app</h3>
+  <table>
+    <tr><td>Blocked</td><td>It stays on the phone, greyed out, and does not open.</td></tr>
+    <tr><td>Off</td><td>Turned off: it is gone from the phone until it is turned back on.</td></tr>
+    <tr><td>PIN</td><td>It asks for the PIN before opening.</td></tr>
+    <tr><td>Protected</td><td>The phone needs it to keep working (in the System view): only some actions are allowed on it.</td></tr>
+  </table>
+  <img class="wide" src="img/10-blocked-filter.png">
+  <p>An app shown with only its first letter is one whose icon the phone could not draw (it happens with some Samsung apps whose icon changes, like the calendar). It works the same.</p>
+</section>
+
+<section>
+  <h2><span class="n">9</span>What can be done to an app</h2>
+  <img src="img/05-app-menu.png">
+  <table>
+    <tr><td>Open on the phone</td><td>Opens it on the phone.</td></tr>
+    <tr><td>Show it in the Play Store</td><td>Opens its Play Store page on the phone.</td></tr>
+    <tr><td>Save a copy of the APK</td><td>Copies the app (not its data) to the PC, in <code>Documents\Mirryl\&lt;phone&gt;\APKs</code>, and shows it in Explorer.</td></tr>
+    <tr><td>Stop it</td><td>Force-stops it. It starts again the next time it is opened.</td></tr>
+    <tr><td>Block… / Unblock</td><td>Blocks it: it stays on the phone, greyed out, and does not open until it is unblocked from Mirryl. Its data is kept. Android does not allow blocking a few apps (Settings, the Play Store): those are turned off instead, and Unblock brings them back the same way.</td></tr>
+    <tr><td>Turn off… / Turn on</td><td>Turns it off: it disappears from the phone, with its data kept, until it is turned on again. If the phone uses it for something, that stops working too.</td></tr>
+    <tr><td>Delete its data…</td><td>Deletes everything the app keeps on the phone (accounts, settings, files). It cannot be undone.</td></tr>
+    <tr><td>Uninstall…</td><td>Removes the app and its data. It cannot be undone. Only for apps that did not come with the phone: those are turned off instead.</td></tr>
+    <tr><td>Protect with PIN… / Remove the PIN</td><td>Makes it ask for the PIN before opening (section 11).</td></tr>
+  </table>
+  <div class="note"><b>Apps Mirryl keeps safe.</b> Some apps keep the phone working, or let Mirryl reach it (Settings, the Play Store, the launcher, Google Play services, the Mirryl app, the phone's system screens). On those, Mirryl only allows opening them, blocking them and, where it is safe, the PIN. The Mirryl app itself can never be blocked or protected.</div>
+
+  <section class="flow">
+  <h2><span class="n">10</span>Several apps at once</h2>
+  <img src="img/06-apps-select.png">
+  <ul>
+    <li><b>Select</b> puts the apps in selection mode: each click ticks or unticks one. You can also tick apps with <span class="k">Ctrl+click</span>, and a whole run of them with <span class="k">Shift+click</span>.</li>
+    <li><b>Select all shown</b> ticks every app the current filter or search shows.</li>
+    <li>The bar - or a right-click on any ticked app - offers <b>Block</b>, <b>Unblock</b>, <b>Protect with PIN</b> and <b>Remove the PIN</b> for all of them. Blocking asks once for the lot. At the end, Mirryl says how many it did and which ones it could not, and why.</li>
+    <li><b>Done</b> (or <span class="k">Esc</span>) leaves the selection.</li>
+  </ul>
+  </section>
+</section>
+
+<section>
+  <h2><span class="n">11</span>PIN protection</h2>
+  <img class="half" src="img/08-pin.png">
+  <p>A protected app keeps working, but asks for the PIN on the phone before it opens. It is a gentler way than blocking to keep people out of an app - for example, out of Settings - while you can still get in from the phone itself.</p>
+  <ul>
+    <li><b>One PIN per phone.</b> The first time you protect an app, Mirryl asks you to choose it (4 to 12 digits, twice). Every app you protect afterwards uses the same PIN, without asking again. <b>PIN for protected apps…</b> on the phone's page changes it.</li>
+    <li><b>On the phone</b>, the protected app shows a Mirryl screen that asks for the PIN. <i>Open</i> lets the person in; <i>Go back</i> returns to the home screen. After five wrong PINs it waits 30 seconds. Once open, the app stays open until the person goes to another app or the screen turns off.</li>
+    <li><b>The install and uninstall screens</b> of the phone are protected along with the first app, so nobody can uninstall the Mirryl app to get around the PIN.</li>
+    <li><b>A forgotten PIN</b> is no problem: Mirryl on the PC changes it, or removes the protection, without asking for it.</li>
+    <li><b>The phone needs the Mirryl app version 27 or newer</b> (Mirryl 1.0.12 carries it). If Mirryl says the app is older, press <b>Reinstall the Mirryl app</b> on the phone's page first.</li>
+    <li><b>It stays on.</b> The PIN works through a service of the Mirryl app that Mirryl turns on by itself. If someone turns it off on the phone, Mirryl's reconnection service turns it back on within a few minutes, and Mirryl tells you which phone it was.</li>
+  </ul>
+  <div class="note"><b>Its limit.</b> A phone restarted in <i>safe mode</i> starts without the apps that did not come with it - the Mirryl app included - so it does not ask for the PIN while it is in safe mode.</div>
+</section>
+
+<section>
+  <h2><span class="n">12</span>Profiles</h2>
+  <img src="img/09-profile.png">
+  <p>A profile is a list of apps to block and apps to protect with the PIN, saved with a name - for example <i>Employee</i> or <i>Kiosk</i> - to give several phones the same set-up.</p>
+  <ol>
+    <li>Set up one phone the way you want: block and protect its apps.</li>
+    <li>On its page, press <b>Save as profile…</b> and give it a name. It saves what the phone has blocked and protected right now.</li>
+    <li>Apply it: to one phone with <b>Apply a profile…</b> on its page, or to several with <b>Apply profile</b> in the selection bar of the list.</li>
+  </ol>
+  <table>
+    <tr><td>Choosing the profile</td><td>Click it in the list. <b>Delete</b> deletes that profile.</td></tr>
+    <tr><td>Make the phone exactly like the profile</td><td>Ticked: Mirryl also unblocks and takes the PIN off the apps the profile does not name. Not ticked: it only adds what the profile says.</td></tr>
+    <tr><td>A phone with no PIN yet</td><td>If the profile has PIN apps, Mirryl asks for a PIN once and sets it on every phone of that run that has none.</td></tr>
+  </table>
+  <p>Apps the profile names that a phone does not have are skipped, and the summary lists them.</p>
+
+  <section class="flow">
+  <h2><span class="n">13</span>Info</h2>
+  <img src="img/07-info.png">
+  <p>The phone's battery, free storage, Android version, model, serial number, how long it has been on, and its address on the network. <b>Refresh</b> reads it again.</p>
+  </section>
+</section>
+
+<section>
+  <h2><span class="n">14</span>Settings</h2>
+  <img src="img/11-settings.png">
+  <table>
+    <tr><td>Theme</td><td>Light or dark. Mirryl keeps your choice.</td></tr>
+    <tr><td>Keyboard shortcuts</td><td>Click a shortcut and press the new keys. <b>Reset</b> puts back the original one. They apply to mirrors opened afterwards.</td></tr>
+  </table>
+
+  <section class="flow">
+  <h2><span class="n">15</span>About and licenses</h2>
+  <img src="img/13-about.png">
+  <p>Mirryl's version, a link to its repository, the third-party licenses, Mirryl's license and terms (<code>EULA.txt</code>), the privacy notice (<code>PRIVACY.txt</code>) and this guide. <b>Show in folder</b> opens the folder where each file is.</p>
+  </section>
+</section>
+
+<section>
+  <h2><span class="n">16</span>When something goes wrong</h2>
+  <table>
+    <tr><td>A yellow notice with <b>Repair</b> on the main screen</td><td>Windows is missing something Mirryl needs (a firewall rule, or the reconnection service). <b>Repair</b> fixes it; Windows asks for administrator once. <b>Not now</b> hides it.</td></tr>
+    <tr><td>A phone does not reconnect over Wi-Fi</td><td>Check that it is on the same network and that Wireless debugging is on. Press <b>Connect</b>. If its address changed, <b>Re-pair this device</b> on its page.</td></tr>
+    <tr><td>The phone does not come back by itself after a reboot</td><td>The Mirryl app may be missing or old on it: <b>Reinstall the Mirryl app</b> on its page.</td></tr>
+    <tr><td>The apps list says the phone stopped answering</td><td>Press <b>Refresh</b>. Mirryl skips, by itself, an app whose icon makes the phone stop.</td></tr>
+    <tr><td>"The Mirryl app on this phone is older than the PIN protection"</td><td><b>Reinstall the Mirryl app</b> on the phone's page, then try again.</td></tr>
+    <tr><td>Phones stop answering in general</td><td><b>Restart ADB</b> in the Add device steps restarts the connection service.</td></tr>
+  </table>
+  <h3>Unblocking apps if this PC is not available</h3>
+  <p>Blocks and PINs live on the phone, not on the PC. If this PC breaks:</p>
+  <ul>
+    <li><b>From another PC with Mirryl</b>: plug the phone in by cable and accept <i>Allow USB debugging</i> on it (this works even with Settings blocked), add it, and use <b>Unblock</b> or <b>Remove the PIN</b>.</li>
+    <li><b>From any PC with Android's platform-tools</b>: <code>adb shell pm unsuspend &lt;package&gt;</code> unblocks an app, and <code>adb shell pm enable &lt;package&gt;</code> turns back on one that was turned off.</li>
+  </ul>
+  <div class="note"><b>Keep USB debugging on</b> on phones you manage. With USB debugging off and Settings turned off, nothing can reach the phone from a computer, and only a factory reset brings it back.</div>
+  <div class="tip">Everything Mirryl does to a phone is written, with the date, in <code>%LOCALAPPDATA%\Mirryl\activity.log</code> on the PC (without the PIN).</div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,1673 @@
+<!doctype html>
+<html lang="en" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="google" content="notranslate">
+<title>__WINDOW_TITLE__</title>
+<link rel="icon" type="image/png" href="/__TOKEN__/logo.png">
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#000}
+body{position:relative}
+/* No max-width/max-height, no width:auto/height:auto: layoutCanvas() in the
+   script below now sets explicit px on every frame and rotation change, and
+   a stale 100vw/100vh cap here silently overrides its own numbers back down
+   to the window's un-rotated size - which is exactly the box a 90/270
+   rotation needs to stop being square inside. */
+/* position:absolute + left/top:50% + translate(-50%,-50%) is what actually
+   centers this, rotated or not - see the comment on layoutCanvas().
+   The translate is declared HERE as well as in layoutCanvas() on purpose.
+   It used to live only in the JavaScript, and when layoutCanvas() did not
+   run - which happened for real, see the note in the paint path - the canvas
+   kept left/top:50% with nothing pulling it back, so its top-left corner sat
+   on the window's centre and the picture spilled off the bottom-right corner.
+   With the base transform in CSS, that failure degrades to "centred but not
+   scaled to the window" instead of "shoved into a corner". layoutCanvas()
+   overwrites this with the same translate plus any rotation. */
+canvas{display:block;position:absolute;left:50%;top:50%;
+transform:translate(-50%,-50%);
+background:#000;touch-action:none;cursor:default}
+#status{display:none}
+/* Sits over the last frame, which stays visible behind it: the frozen picture
+   is the clearest possible statement that this is not live any more. */
+#linkOverlay{position:fixed;inset:0;display:none;place-items:center;z-index:10;
+background:rgba(6,8,12,.78)}
+#linkOverlay.on{display:grid}
+#linkCard{width:min(430px,88vw);padding:24px;border-radius:14px;text-align:center;
+background:#15171c;border:1px solid #2b2f38;color:#e8eaef;
+font:14px/1.55 "Segoe UI",system-ui,sans-serif}
+#linkTitle{margin:0 0 6px;font-size:16px;font-weight:600}
+#linkBody{margin:0 0 16px;color:#a9b0bd}
+#linkError{margin:0 0 14px;color:#ff8f8f;display:none}
+#linkButtons{display:flex;gap:10px;justify-content:center;margin-bottom:14px}
+#linkButtons button{flex:1;padding:9px 12px;border-radius:9px;cursor:pointer;
+border:1px solid #3a4150;background:#232733;color:#e8eaef;font:inherit}
+#linkButtons button:hover:not(:disabled){background:#2c313f}
+#linkButtons button:disabled{opacity:.45;cursor:default}
+#linkButtons button.primary{background:#2f6df6;border-color:#2f6df6;color:#fff}
+#linkFoot{margin:0;font-size:12px;color:#7f8797}
+/* The cable offer is a BAR, not the overlay: here the mirror is working, and
+   covering a working picture to ask an optional question would be worse than
+   the confusion it is fixing. It sits over the top edge and leaves everything
+   else usable while the user decides. */
+#usbBar{position:fixed;top:0;left:0;right:0;z-index:9;display:none;
+gap:8px;align-items:center;flex-wrap:wrap;padding:9px 12px;
+background:rgba(21,23,28,.94);border-bottom:1px solid #2b2f38;color:#e8eaef;
+font:13px/1.35 "Segoe UI",system-ui,sans-serif}
+#usbBar.on{display:flex}
+/* The mirror window is phone-shaped - narrow and tall, 240 px wide at its
+   smallest - so this has to fold. Without wrapping, at the minimum size the
+   bar ate 38% of the window and the second button ran off the right edge. */
+#usbBarText{flex:1 1 150px;margin:0}
+#usbBar button{flex:1 1 auto;padding:6px 11px;border-radius:8px;cursor:pointer;
+border:1px solid #3a4150;background:#232733;color:#e8eaef;font:inherit;white-space:nowrap}
+#usbBar button:hover:not(:disabled){background:#2c313f}
+#usbBar button:disabled{opacity:.45;cursor:default}
+#usbBar button.primary{background:#2f6df6;border-color:#2f6df6;color:#fff}
+#bottomBars{position:fixed;bottom:0;left:0;right:0;z-index:9;
+display:flex;flex-direction:column}
+#gameBar{display:none;
+gap:8px;align-items:center;flex-wrap:wrap;padding:9px 12px;
+font:13px/1.35 "Segoe UI",system-ui,sans-serif}
+#gameBar.on{display:flex}
+#gameBarText{flex:1 1 170px;margin:0}
+#gameBar button{flex:0 1 auto;padding:6px 11px;border-radius:8px;
+cursor:pointer;font:inherit;white-space:nowrap}
+/* Blue, not amber: game mode is a mode the user chose, not a warning about the
+   phone. It still needs saying, because while it is on the keyboard stops
+   typing - and a keyboard that silently stops working is maddening. */
+#gameBar{background:rgba(14,29,48,.95);border-top:1px solid #2b5580;color:#cfe4f7}
+#gameBar button{border:1px solid #35618f;background:#132b45;color:#cfe4f7}
+#gameBar button:hover{background:#1b3a5c}
+/* Close / Don't show again: dismissing the hint, not leaving the mode - kept
+   visually quieter than "Turn off" so the one button that actually changes
+   behaviour stays the one your eye lands on first. */
+#gameBar button.ghost{border-color:transparent;background:transparent;opacity:.75}
+#gameBar button.ghost:hover{background:rgba(255,255,255,.08);opacity:1}
+/* The game-mode ON/OFF flash. Separate from #gameBar on purpose: the hint
+   strip above can be dismissed forever, but a press that changes what the
+   keyboard does needs SOME answer every single time, or there is no way to
+   tell a press that worked from one that missed. Fixed above the bottom
+   bars, not inside their flex column, so it never shifts them when it shows
+   up or fades out mid-strip. */
+#modeToast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%) translateY(6px);
+  padding:7px 14px;border-radius:16px;background:rgba(14,29,48,.95);
+  border:1px solid #2b5580;color:#cfe4f7;font:13px/1.2 "Segoe UI",system-ui,sans-serif;
+  opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;z-index:11}
+#modeToast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<canvas id="screen" width="__DEVICE_WIDTH__" height="__DEVICE_HEIGHT__"></canvas>
+<span id="status" aria-live="polite">Connecting…</span>
+<div id="usbBar">
+  <p id="usbBarText">A USB cable is connected. This window is still mirroring over Wi-Fi.</p>
+  <button class="primary" id="usbSwitchBtn">Switch to USB</button>
+  <button id="usbStayBtn">Stay on Wi-Fi</button>
+</div>
+<div id="bottomBars">
+  <div id="gameBar">
+    <p id="gameBarText"><strong>Game mode.</strong> Single keys act as swipes and are not typed into the phone.</p>
+    <button id="gameBarOffBtn">Turn off</button>
+    <!-- Close: hides the strip for the rest of THIS game-mode session only -
+         toggle off and back on and it is back. Don't show again: the same,
+         but remembered on disk, so it stays gone in every window opened after
+         this one too. Neither turns game mode itself off - that is still the
+         first button, and closing the hint must not cost the feature. -->
+    <button class="ghost" id="gameBarCloseBtn">Close</button>
+    <button class="ghost" id="gameBarNeverBtn">Don't show again</button>
+  </div>
+</div>
+<div id="modeToast"></div>
+<div id="linkOverlay">
+  <div id="linkCard">
+    <p id="linkTitle">Connection lost</p>
+    <p id="linkBody"></p>
+    <p id="linkError"></p>
+    <div id="linkButtons">
+      <button id="linkPrimary"></button>
+      <button id="linkSecondary"></button>
+    </div>
+    <p id="linkFoot"></p>
+  </div>
+</div>
+<script>
+"use strict";
+const token="__TOKEN__",deviceWidth=__DEVICE_WIDTH__,deviceHeight=__DEVICE_HEIGHT__;
+const canvas=document.querySelector("#screen"),ctx=canvas.getContext("2d",{alpha:false,desynchronized:true});
+const status=document.querySelector("#status");
+const VIDEO_HEADER=24,MAX_PAYLOAD=16*1024*1024,MAX_DECODE_QUEUE=3;
+let pending=new Uint8Array(1024*1024),pendingLength=0;
+let codecConfig=null,codecName="",decoder=null,latestFrame=null;
+// Machines with no H.264 hardware decoder (virtual GPUs, older integrated
+// graphics) reject "prefer-hardware" outright: the decoder errors on the very
+// first configure and nothing ever paints, leaving a white window. Start with
+// hardware, but fall back to software the moment it fails.
+let accelMode="prefer-hardware";
+let paintScheduled=false,awaitingKey=true,lastRecovery=-1000,recoveries=0,dropped=0;
+// The browser's own pulse, to diagnose frame drops. The rest of the viewer
+// only asks for a paint turn when a frame is waiting, so renderGap mixes two
+// very different things: "no picture arrived" and "the browser gave me no
+// turn". This pulse is ALWAYS re-requested, so its cadence is the browser's
+// and nothing else. In a visible window it beats at the monitor's refresh;
+// in a covered or background one the browser slows it on purpose, and that
+// is exactly what must be told apart from a real fault.
+let rafTicks=0,rafWorstGap=0,lastRafAt=0;
+requestAnimationFrame(function beat(now){
+  if(lastRafAt){const gap=now-lastRafAt;rafTicks++;if(gap>rafWorstGap)rafWorstGap=gap}
+  lastRafAt=now;
+  requestAnimationFrame(beat);
+});
+let lastKeyRequest=-1000;
+let latestReceivedPts=0,latestDecodedPts=0,latestPresentedPts=0,queuePeak=0;
+let frames=0,reportedFps=0,lastFps=performance.now(),packets=0,decoded=0,rendered=0;
+let lastPacketAt=performance.now(),lastDecodeAt=lastPacketAt,lastRenderAt=lastPacketAt;
+let packetTimes=new Map(),decodeSamples=[],renderSamples=[];
+let decoderErrors=0,canvasErrors=0,sourceFreezes=0,renderFreezes=0;
+let sourceFreezeActive=false,renderFreezeActive=false,videoStreamActive=false;
+let audioBytes=0,audioBufferedMs=0,audioDrops=0,controlReconnects=0;
+let pointerActive=false,pendingMove=null,moveScheduled=false;
+let lastInputAt=-10000;
+// The panel over the picture tells one of three stories, and the buttons on
+// it mean different things in each: "link" is the phone gone (reconnect),
+// "failure" is a mirror that could not start (try again), "unsupported" is
+// the phone saying it cannot (try again anyway, nothing automatic). While a
+// start story is up, `startFailure` keeps the panel from being hidden by the
+// link poll that runs every few seconds and finds the phone attached.
+let startFailure=false,overlayMode="link",videoRetryRequested=false;
+
+// ---------- Following the phone, and filling the window ----------
+// There is no rotation control here, and that is the design. The phone decides
+// its own orientation; when it turns, its stream comes out with width and
+// height swapped and already the right way up. All this window does is take
+// the new shape - reshape itself, and keep the picture filling it.
+//
+// Rotating from this side was tried twice and neither works: turning the phone
+// by remote control changes someone's device for a viewing preference, and
+// spinning the picture here just tilts pixels that are already laid out, which
+// is a sideways unreadable screen. Following is the only honest option.
+let frameWidth=0,frameHeight=0,layoutKey="";
+// Quarter turns applied to the PICTURE, cycled with Ctrl+R.
+//
+// This exists because the capture does NOT follow the phone's rotation: the
+// stream keeps the size it started with, so a phone turned to landscape
+// arrives as landscape content laid sideways inside a portrait frame. Turning
+// the picture back is what makes that readable, and the window follows.
+// Fixing the capture itself is the real repair; this is the control that
+// works today.
+let viewRotation=0;
+
+// Fit the picture inside the window, as large as it will go, at any rotation.
+//
+// This runs on every frame AND on every window resize - that second one is
+// what lets dragging the window edge scale the picture with it. Sized from
+// the window, not from `screen`: the screen is not the window, and the
+// picture would stop following a window the user resized by hand.
+// Fill: the picture covers the whole area and what does not fit is cut, instead
+// of showing the phone's whole screen with bars around it (for a landscape
+// video on a phone wider than the monitor). Kept by the host for
+// the session, so it survives moving between the app's tab and a window.
+let fillMode=__FILL_MODE__;
+function layoutCanvas(){
+  if(!frameWidth||!frameHeight)return;
+  const key=`${frameWidth}x${frameHeight}:${viewRotation}:${innerWidth}x${innerHeight}:${fillMode}`;
+  if(layoutKey===key)return;layoutKey=key;
+  const turned=viewRotation===90||viewRotation===270;
+  // What the picture MEASURES on screen once turned: 90/270 swap the sides.
+  const shownW=turned?frameHeight:frameWidth,shownH=turned?frameWidth:frameHeight;
+  // Fit uses the smaller ratio (all of it shows), fill the larger one (no bars,
+  // the overflow is cut by the body's overflow:hidden). Taps still land right:
+  // point() reads the canvas's own box, which is simply bigger than the window.
+  const scale=(fillMode?Math.max:Math.min)(innerWidth/shownW,innerHeight/shownH);
+  const boxW=Math.max(1,Math.floor(shownW*scale)),boxH=Math.max(1,Math.floor(shownH*scale));
+  // Sized PRE-rotation: at 90/270 the width set here lands on screen as height.
+  canvas.style.width=(turned?boxH:boxW)+"px";
+  canvas.style.height=(turned?boxW:boxH)+"px";
+  // Centered with position:absolute at 50%/50% plus this pull-back, rather
+  // than the body's own grid centering, which measured out wrong here.
+  canvas.style.transform=`translate(-50%,-50%)${viewRotation?` rotate(${viewRotation}deg)`:""}`;
+}
+window.addEventListener("resize",layoutCanvas);
+
+// Reshape the window to the shape the phone is now, so the picture fills it
+// instead of sitting between bars.
+//
+// Sized from the picture's aspect and the area the window ALREADY has, which
+// is what makes a window the user enlarged by hand stay that size through a
+// rotation instead of snapping back to some default.
+//
+// window.resizeTo() cannot do this: it is a silent no-op on every call after
+// the first paint (the host sizes the window before this page loads). So the
+// host does it.
+let shownAspect=0;
+function reshapeWindow(){
+  if(!frameWidth||!frameHeight)return;
+  const turned=viewRotation===90||viewRotation===270;
+  const aspect=turned?frameHeight/frameWidth:frameWidth/frameHeight;
+  // Unchanged shape means nothing to do - no window jumping for free.
+  if(Math.abs(aspect-shownAspect)<0.01)return;
+  shownAspect=aspect;
+  const area=Math.max(240*320,innerWidth*innerHeight);
+  let width=Math.round(Math.sqrt(area*aspect)),height=Math.round(Math.sqrt(area/aspect));
+  const chromeW=Math.max(0,outerWidth-innerWidth),chromeH=Math.max(0,outerHeight-innerHeight);
+  const maxW=Math.max(240,screen.availWidth-chromeW-16);
+  const maxH=Math.max(320,screen.availHeight-chromeH-16);
+  const shrink=Math.min(1,maxW/width,maxH/height);
+  width=Math.max(240,Math.round(width*shrink));
+  height=Math.max(320,Math.round(height*shrink));
+  fetch(`/${token}/resize?w=${width}&h=${height}`,{method:"POST"}).catch(()=>{});
+}
+
+// Called with the real size of every frame. Its whole job is spotting the
+// phone turning: same stream, sides swapped.
+function noteFrameSize(width,height){
+  const first=!frameWidth,wasLandscape=frameWidth>frameHeight;
+  frameWidth=width;frameHeight=height;
+  if(first){
+    shownAspect=width/height;
+    // The host sized this window before the page loaded, from the phone's
+    // PHYSICAL size - which reads portrait even on a phone that is currently
+    // turned. When the first frame disagrees with the window it was given,
+    // the window is the wrong shape from the very first paint.
+    if(Math.abs(innerWidth/innerHeight-shownAspect)>0.15){
+      shownAspect=0;
+      reshapeWindow();
+    }
+    return;
+  }
+  if((width>height)===wasLandscape)return;
+  reshapeWindow();
+}
+function join(parts){
+  let size=0;for(const part of parts)size+=part.length;
+  const output=new Uint8Array(size);let offset=0;
+  for(const part of parts){output.set(part,offset);offset+=part.length}
+  return output;
+}
+function annexStarts(bytes){
+  const starts=[];
+  for(let i=0;i<bytes.length-3;i++){
+    if(bytes[i]===0&&bytes[i+1]===0&&bytes[i+2]===1){starts.push([i,3]);i+=2}
+    else if(bytes[i]===0&&bytes[i+1]===0&&bytes[i+2]===0&&bytes[i+3]===1){starts.push([i,4]);i+=3}
+  }
+  return starts;
+}
+function codecFromConfig(bytes){
+  for(const [offset,length] of annexStarts(bytes)){
+    const nal=offset+length;
+    if(nal+3<bytes.length&&(bytes[nal]&31)===7){
+      return "avc1."+[bytes[nal+1],bytes[nal+2],bytes[nal+3]]
+        .map(value=>value.toString(16).padStart(2,"0")).join("");
+    }
+  }
+  return "";
+}
+// WebKitGTK (the Linux window) decodes H.264 only as AVCC: NAL units prefixed
+// by their length, plus an `avcC` record as the decoder's `description`. The
+// Annex B stream the phone sends, which WebView2 takes as it is, ends in
+// "Decode error" there (WebKitGTK 2.52: Annex B, with or without a
+// description, fails; AVCC decodes). So only WebKit converts; the Windows
+// path below takes Annex B as it is.
+const USE_AVCC=/AppleWebKit/.test(navigator.userAgent)&&!/Chrome\//.test(navigator.userAgent);
+function nalRanges(bytes){
+  const starts=annexStarts(bytes),ranges=[];
+  for(let k=0;k<starts.length;k++){
+    ranges.push([starts[k][0]+starts[k][1],k+1<starts.length?starts[k+1][0]:bytes.length]);
+  }
+  return ranges;
+}
+function annexbToAvcc(bytes){
+  const ranges=nalRanges(bytes);
+  let total=0;for(const [begin,end] of ranges)total+=4+end-begin;
+  const out=new Uint8Array(total);let at=0;
+  for(const [begin,end] of ranges){
+    const size=end-begin;
+    out[at++]=size>>>24;out[at++]=(size>>>16)&255;out[at++]=(size>>>8)&255;out[at++]=size&255;
+    out.set(bytes.subarray(begin,end),at);at+=size;
+  }
+  return out;
+}
+function avcDescription(config){
+  let sps=null,pps=null;
+  for(const [begin,end] of nalRanges(config)){
+    const type=config[begin]&31;
+    if(type===7&&!sps)sps=config.subarray(begin,end);
+    else if(type===8&&!pps)pps=config.subarray(begin,end);
+  }
+  if(!sps||!pps)return null;
+  const out=new Uint8Array(11+sps.length+pps.length);
+  out.set([1,sps[1],sps[2],sps[3],0xFF,0xE1,sps.length>>8,sps.length&255]);
+  out.set(sps,8);
+  out.set([1,pps.length>>8,pps.length&255],8+sps.length);
+  out.set(pps,11+sps.length);
+  return out;
+}
+function configureDecoder(){
+  if(!codecConfig||!codecName)return false;
+  if(decoder&&decoder.state!=="closed"){
+    try{decoder.reset()}catch(_){}
+  }else{
+    decoder=new VideoDecoder({
+      output:frame=>{
+        const decodedAt=performance.now(),receivedAt=packetTimes.get(frame.timestamp);
+        decoded++;latestDecodedPts=frame.timestamp;lastDecodeAt=decodedAt;
+        if(receivedAt!==undefined)decodeSamples.push(decodedAt-receivedAt);
+        if(latestFrame){
+          packetTimes.delete(latestFrame.timestamp);latestFrame.close();dropped++;
+        }
+        latestFrame=frame;
+        if(!paintScheduled){
+          paintScheduled=true;
+          requestAnimationFrame(()=>{
+            paintScheduled=false;
+            const current=latestFrame;latestFrame=null;if(!current)return;
+            const pts=current.timestamp,receivedAt=packetTimes.get(pts),renderedAt=performance.now();
+            try{
+              if(canvas.width!==current.displayWidth||canvas.height!==current.displayHeight){
+                canvas.width=current.displayWidth;canvas.height=current.displayHeight;
+              }
+              // Learning the frame size is a DIFFERENT question from resizing
+              // the bitmap, and tying the two together is what put the picture
+              // in a corner on the C66 (Android 11, 720x1440).
+              //
+              // The host pre-sizes this canvas element from the phone's
+              // `wm size` (__DEVICE_WIDTH__/__DEVICE_HEIGHT__ in the markup).
+              // On a phone whose frames arrive at exactly that size - 720x1440
+              // here - the resize test above is already false on the FIRST
+              // frame, so noteFrameSize(), the only writer of frameWidth and
+              // frameHeight, never ran at all. layoutCanvas() then bailed out
+              // on its `if(!frameWidth||!frameHeight)` guard every single
+              // frame, never set the centring transform, and never scaled the
+              // picture to the window. Ctrl+R could not rescue it either:
+              // rotateView() also just calls layoutCanvas(), which bailed for
+              // the same reason.
+              //
+              // So ask the real question: is the size we have recorded still
+              // the size that is arriving? That fires once on the first frame
+              // whatever the host pre-filled, and again on a genuine change.
+              if(frameWidth!==current.displayWidth||frameHeight!==current.displayHeight){
+                noteFrameSize(current.displayWidth,current.displayHeight);
+              }
+              layoutCanvas();
+              ctx.drawImage(current,0,0);
+              rendered++;frames++;latestPresentedPts=pts;lastRenderAt=renderedAt;
+              if(receivedAt!==undefined)renderSamples.push(renderedAt-receivedAt);
+            }catch(error){
+              canvasErrors++;status.textContent="Draw error: "+error.message;
+            }finally{
+              packetTimes.delete(pts);current.close();
+            }
+            const now=performance.now();
+            if(now-lastFps>=1000){
+              reportedFps=Math.round(frames*1000/(now-lastFps));
+              frames=0;lastFps=now;
+            }
+          });
+        }
+      },
+      error:error=>{
+        decoderErrors++;
+        if(downgradeAcceleration())return;
+        status.textContent="Video error: "+error.message;
+      }
+    });
+  }
+  try{
+    const decoderConfig={codec:codecName,optimizeForLatency:true,hardwareAcceleration:accelMode};
+    if(USE_AVCC){
+      const description=avcDescription(codecConfig);
+      if(description)decoderConfig.description=description;
+    }
+    decoder.configure(decoderConfig);
+  }catch(error){
+    // configure() can reject the config synchronously (it does on machines with
+    // no hardware decoder). That leaves an unusable decoder behind, so drop it:
+    // otherwise the next packet decodes into a dead object and the window never
+    // paints. Dropping it makes the next packet build a fresh one instead.
+    try{if(decoder&&decoder.state!=="closed")decoder.close()}catch(_){}
+    decoder=null;
+    if(downgradeAcceleration())return true;
+    status.textContent="Video error: "+error.message;
+    return false;
+  }
+  return true;
+}
+/// Rebuild the decoder in software mode after hardware decoding failed.
+/// Deliberately does not go through recoverDecoder(): its 250 ms debounce can
+/// swallow this one call, and then the window never recovers at all.
+function downgradeAcceleration(){
+  if(accelMode==="prefer-software")return false;
+  accelMode="prefer-software";
+  awaitingKey=true;
+  if(latestFrame){latestFrame.close();latestFrame=null}
+  packetTimes.clear();
+  try{if(decoder&&decoder.state!=="closed")decoder.close()}catch(_){}
+  decoder=null;
+  if(!configureDecoder())return false;
+  recoveries++;
+  status.textContent="Decodificando por software";
+  requestKeyframe();
+  return true;
+}
+function requestKeyframe(){
+  lastKeyRequest=performance.now();
+  if(control&&control.readyState===WebSocket.OPEN)control.send(new Uint8Array([3]));
+  else fetch(`/${token}/sync`,{method:"POST"}).catch(()=>{});
+}
+function recoverDecoder(){
+  const now=performance.now();
+  awaitingKey=true;
+  if(latestFrame){latestFrame.close();latestFrame=null}
+  packetTimes.clear();
+  if(now-lastRecovery<250){
+    // The debounce skips the expensive reconfigure, but awaitingKey is already
+    // true - so every delta packet below is dropped until a keyframe arrives.
+    // Without asking for one here, the only keyframe left is the encoder's
+    // periodic IDR (KEY_I_FRAME_INTERVAL = 10 s in the Android agent), and
+    // nothing else can call this function in the meantime: the picture freezes
+    // for up to ten seconds. Slow machines - the ones decoding in software -
+    // hit this repeatedly. Throttled so it can't turn into a keyframe storm.
+    if(now-lastKeyRequest>=250)requestKeyframe();
+    return;
+  }
+  lastRecovery=now;recoveries++;
+  configureDecoder();
+  requestKeyframe();
+}
+function processPacket(flags,pts,data){
+  packets++;lastPacketAt=performance.now();
+  const configuration=(flags&1)!==0,key=(flags&2)!==0;
+  if(configuration){
+    codecConfig=data;
+    codecName=codecFromConfig(data);
+    if(codecName&&!decoder)configureDecoder();
+    return;
+  }
+  latestReceivedPts=Math.max(latestReceivedPts,pts);
+  if(!decoder&&!configureDecoder())return;
+  if(decoder.decodeQueueSize>MAX_DECODE_QUEUE)recoverDecoder();
+  if(awaitingKey&&!key)return;
+  if(key)awaitingKey=false;
+  let payload=key&&codecConfig?join([codecConfig,data]):data;
+  if(USE_AVCC)payload=annexbToAvcc(payload);
+  packetTimes.set(pts,performance.now());
+  try{
+    decoder.decode(new EncodedVideoChunk({
+      type:key?"key":"delta",
+      timestamp:pts,
+      data:payload
+    }));
+    queuePeak=Math.max(queuePeak,decoder.decodeQueueSize);
+  }catch(_){
+    packetTimes.delete(pts);decoderErrors++;
+    if(!downgradeAcceleration())recoverDecoder();
+  }
+}
+function feed(chunk){
+  const required=pendingLength+chunk.length;
+  if(required>pending.length){
+    let capacity=pending.length;
+    while(capacity<required)capacity=Math.max(capacity*2,required);
+    const replacement=new Uint8Array(capacity);
+    replacement.set(pending.subarray(0,pendingLength));
+    pending=replacement;
+  }
+  pending.set(chunk,pendingLength);pendingLength=required;
+  let offset=0;
+  while(pendingLength-offset>=VIDEO_HEADER){
+    const view=new DataView(pending.buffer,pending.byteOffset+offset,pendingLength-offset);
+    if(view.getUint32(0,false)!==0x4d595631||view.getUint8(4)!==1||view.getUint16(6,false)!==VIDEO_HEADER){
+      throw new Error("Cabecera de video Mirryl invalida");
+    }
+    const length=view.getUint32(8,false);
+    if(length>MAX_PAYLOAD)throw new Error("Video frame too large");
+    if(pendingLength-offset<VIDEO_HEADER+length)break;
+    const flags=view.getUint8(5);
+    const pts=Number(view.getBigUint64(16,false));
+    const data=pending.slice(offset+VIDEO_HEADER,offset+VIDEO_HEADER+length);
+    processPacket(flags,pts,data);
+    offset+=VIDEO_HEADER+length;
+  }
+  if(offset){
+    pending.copyWithin(0,offset,pendingLength);
+    pendingLength-=offset;
+  }
+}
+/// Ask the browser up front whether it can decode H.264 in hardware, so a
+/// machine without a hardware decoder starts in software mode instead of
+/// burning the first frames on a decoder that was never going to work. Best
+/// effort only - the fallback in the error path is what actually guarantees
+/// recovery, since this answer may arrive after the first packet.
+async function probeAcceleration(){
+  try{
+    const {supported}=await VideoDecoder.isConfigSupported({
+      codec:"avc1.640028",optimizeForLatency:true,hardwareAcceleration:"prefer-hardware"
+    });
+    if(!supported&&accelMode==="prefer-hardware"&&!decoder)accelMode="prefer-software";
+  }catch(_){}
+}
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+let stopping=false;
+window.addEventListener("pagehide",()=>{stopping=true});
+window.addEventListener("beforeunload",()=>{stopping=true});
+
+// ---------- The phone is gone ----------
+// Nothing here reconnects on its own. A stream that dies asks the host whether
+// the phone is actually still attached; if it is not, every loop stops and this
+// panel takes over. Reconnecting is a click - which is what keeps a cable
+// pulled out by someone who had finished from leaving the machine grinding
+// away at a phone that is never coming back.
+// One exception lives in the HOST (try_auto_switch): when the same
+// phone is already attached on the other link, the host moves the session
+// there itself within the first 30 s. The panel then just sees the link come
+// back in its poll, and onLinkBack does what a successful click does.
+const overlay=document.querySelector("#linkOverlay");
+const linkTitle=document.querySelector("#linkTitle");
+const linkBody=document.querySelector("#linkBody");
+const linkError=document.querySelector("#linkError");
+const linkFoot=document.querySelector("#linkFoot");
+const linkPrimary=document.querySelector("#linkPrimary");
+const linkSecondary=document.querySelector("#linkSecondary");
+// linkKind starts UNKNOWN, not "usb": the cable watcher skips its check
+// whenever it believes it is already on the cable, so a "usb" default would
+// keep the offer from ever appearing in a healthy Wi-Fi session. A guess about
+// the current state is worse than no state at all.
+let linkDown=false,linkAttempting=false,linkKind="";
+let attemptEndsAt=0,linkPolling=false;
+const linkName=kind=>kind==="usb"?"USB":"Wi-Fi";
+
+function paintLink(state){
+  linkDown=state.state==="down";
+  linkAttempting=!!state.attempting;
+  if(state.kind)linkKind=state.kind;
+  if(linkDown&&startFailure){
+    // The phone leaving outranks a start that failed: the panel switches to
+    // the reconnect story, and the start counters reset when it is back.
+    startFailure=false;overlayMode="link";linkSecondary.style.display="";
+  }
+  overlay.classList.toggle("on",linkDown||startFailure);
+  if(!linkDown)return;
+  const other=linkKind==="usb"?"wifi":"usb";
+  linkTitle.textContent=`${linkName(linkKind)} connection lost`;
+  linkBody.textContent=linkKind==="usb"
+    ?"The phone stopped responding. Plug the cable back in and retry, or switch to Wi-Fi."
+    :"The phone stopped responding. Retry over Wi-Fi, or plug in the cable and switch to USB.";
+  linkPrimary.textContent=`Retry over ${linkName(linkKind)}`;
+  linkSecondary.textContent=`Switch to ${linkName(other)}`;
+  linkPrimary.className="primary";
+  linkPrimary.disabled=linkSecondary.disabled=linkAttempting;
+  if(state.error){linkError.textContent=state.error;linkError.style.display="block"}
+  else linkError.style.display="none";
+  if(linkAttempting){
+    // The attempt's own clock, not the host's: while it runs the host holds the
+    // close countdown, and showing a number frozen for 30 s looks like a hang.
+    const left=Math.max(0,Math.ceil((attemptEndsAt-Date.now())/1000));
+    // No clock of our own when the host started the attempt (try_auto_switch).
+    linkFoot.textContent=left>0?`Looking for the phone… ${left}s`:"Moving to the phone's other connection…";
+  }else{
+    const left=Math.ceil((state.closing_in_ms||0)/1000);
+    linkFoot.textContent=`This window closes on its own in ${left}s.`;
+  }
+}
+
+// ---------- A cable turned up while we are on Wi-Fi ----------
+// The device list shows the phone's best available link, so plugging a cable in
+// flips its icon to USB while THIS window is still on Wi-Fi - and the list ends
+// up describing something that is not the picture on screen. Rather than let
+// that stand, say it here and let the user choose. Nothing moves on its own.
+const usbBar=document.querySelector("#usbBar");
+const usbSwitchBtn=document.querySelector("#usbSwitchBtn");
+const usbStayBtn=document.querySelector("#usbStayBtn");
+let usbBusy=false;
+
+function paintUsbOffer(state){
+  // Never while the phone is gone: that is the reconnect panel's problem, and
+  // two questions at once is one too many.
+  //
+  // `usbOfferAnswered` is checked here as well as on the host, which records
+  // the refusal for the session. Belt and braces on purpose: this is the one
+  // thing the banner must never do - come back after being told no. One
+  // condition is a cheap price for making that true on both sides.
+  const show=!!state.usb_offer&&state.state!=="down"&&!usbBusy&&!usbOfferAnswered;
+  usbBar.classList.toggle("on",show);
+}
+
+async function answerUsbOffer(action){
+  if(usbBusy)return;
+  usbBusy=true;
+  usbSwitchBtn.disabled=usbStayBtn.disabled=true;
+  if(action==="switch"){
+    document.querySelector("#usbBarText").textContent="Moving this window to the cable…";
+  }
+  let result=null;
+  try{
+    result=await (await fetch(`/${token}/usb?action=${action}`,{method:"POST"})).json();
+  }catch(_){}
+  usbSwitchBtn.disabled=usbStayBtn.disabled=false;
+  usbBusy=false;
+  // A switch that failed - the cable was pulled between the offer and the
+  // click - must say so and leave the choice open, not quietly vanish and let
+  // the user believe they are on the cable. That would be the same lie this
+  // whole banner exists to remove.
+  if(action==="switch"&&result&&!result.ok){
+    document.querySelector("#usbBarText").textContent=
+      result.message||"Couldn't switch to the cable.";
+    return;
+  }
+  usbBar.classList.remove("on");
+  usbOfferAnswered=true;
+  if(action==="switch"&&result&&result.ok){
+    // The old video and audio were just torn down on the host; the running
+    // loops will notice and ask again. Drop the half-read packet and wait for
+    // the new agent's keyframe, exactly as after a reconnect.
+    linkKind="usb";
+    pendingLength=0;awaitingKey=true;
+    openControl();
+  }
+}
+usbSwitchBtn.addEventListener("click",()=>answerUsbOffer("switch"));
+usbStayBtn.addEventListener("click",()=>answerUsbOffer("stay"));
+
+// While the mirror is healthy nothing else asks the host anything - checkLink
+// only runs when a stream dies - so without this the banner would never appear.
+// It is a local request, and it stops for good the moment the question is
+// settled: answered either way, or already on the cable.
+let usbOfferAnswered=false;
+(async function watchForCable(){
+  // Ask once up front so the session knows which link it is actually on before
+  // any of the skips below are trusted.
+  await checkLink();
+  while(!stopping){
+    await sleep(3000);
+    if(stopping)break;
+    if(usbOfferAnswered||linkDown||linkKind==="usb")continue;
+    await checkLink();
+  }
+})();
+
+async function checkLink(){
+  try{
+    const state=await (await fetch(`/${token}/link`,{cache:"no-store"})).json();
+    paintLink(state);
+    paintUsbOffer(state);
+    if(linkDown)startLinkPolling();
+    return state;
+  }catch(_){return null}
+}
+
+// Only runs while the phone is missing: one local request a second, purely to
+// keep the countdown honest. It stops the moment the link is back.
+function startLinkPolling(){
+  if(linkPolling)return;
+  linkPolling=true;
+  (async()=>{
+    while(!stopping&&linkDown){
+      await sleep(1000);
+      try{
+        const state=await (await fetch(`/${token}/link`,{cache:"no-store"})).json();
+        // A reply issued before a reconnect succeeded still says "down". Applying
+        // it would put the panel back over a mirror that is already working, so
+        // a poll that finds the link already restored is simply dropped.
+        if(!linkDown)break;
+        paintLink(state);
+        // Back without a click: the host moved the session to the phone's
+        // other link by itself.
+        if(!linkDown){onLinkBack(state.kind);break}
+      }catch(_){}
+    }
+    linkPolling=false;
+  })();
+}
+
+// What a successful reconnect needs on this side, whoever started it. Video
+// and audio pick up by themselves (their loops wait on linkDown); control does
+// not - its onclose gave up while the phone was gone - so it is reopened here.
+function onLinkBack(kind){
+  linkKind=kind||linkKind;
+  linkDown=false;
+  overlay.classList.remove("on");
+  pendingLength=0;awaitingKey=true;
+  openControl();
+}
+
+async function waitWhileLinkDown(){
+  while(linkDown&&!stopping)await sleep(250);
+}
+
+async function reconnect(via){
+  if(linkAttempting)return;
+  linkAttempting=true;
+  attemptEndsAt=Date.now()+30000;
+  linkPrimary.disabled=linkSecondary.disabled=true;
+  linkError.style.display="none";
+  linkFoot.textContent="Looking for the phone… 30s";
+  let result=null;
+  try{
+    result=await (await fetch(`/${token}/reconnect?via=${via}`,{method:"POST"})).json();
+  }catch(_){}
+  linkAttempting=false;
+  if(result&&result.ok){
+    // A different link means a different picture path, so start the streams
+    // from scratch rather than hoping the old ones pick up where they left off.
+    // The poll may have got there first if the host switched on its own; then
+    // there is nothing left to do.
+    if(linkDown)onLinkBack(result.kind);
+    return;
+  }
+  await checkLink();
+  if(result&&result.message){
+    linkError.textContent=result.message;
+    linkError.style.display="block";
+  }
+}
+linkPrimary.addEventListener("click",()=>{
+  if(overlayMode==="link")reconnect(linkKind);
+  else requestVideoRetry();
+});
+linkSecondary.addEventListener("click",()=>reconnect(linkKind==="usb"?"wifi":"usb"));
+// Set once the host answers 415 on a stream: this Android gives the agent no
+// way to do that job, and no number of retries changes that. The video flag
+// also stops the whole picture; the audio flag stops only the sound.
+let videoUnsupported=false,audioUnsupported=false;
+function showUnsupported(reason){
+  overlayMode="unsupported";startFailure=true;
+  linkTitle.textContent="This phone can't be mirrored";
+  linkBody.textContent=reason||"This Android version isn't supported.";
+  showRetryOnly();
+  linkFoot.textContent="Nothing retries on its own: the phone said no. Trying again costs nothing.";
+  overlay.classList.add("on");
+}
+// The mirror could not start several times in a row with the phone still
+// attached - the host answered 503 with a reason each time, or the stream
+// ended before a picture. Say why instead of a black window that knocks for
+// ever.
+function showStartFailure(reason){
+  overlayMode="failure";startFailure=true;
+  linkTitle.textContent="The mirror couldn't start";
+  linkBody.textContent=reason||"The video stream ended before the first picture arrived.";
+  showRetryOnly();
+  linkFoot.textContent="The details are in the engine log.";
+  overlay.classList.add("on");
+}
+function showRetryOnly(){
+  document.querySelector("#linkButtons").style.display="";
+  linkPrimary.textContent="Try again";
+  linkPrimary.className="primary";
+  linkPrimary.disabled=false;
+  linkSecondary.style.display="none";
+  linkError.style.display="none";
+}
+function hideStartPanel(){
+  startFailure=false;overlayMode="link";
+  linkSecondary.style.display="";
+  if(!linkDown)overlay.classList.remove("on");
+}
+function requestVideoRetry(){
+  hideStartPanel();
+  videoRetryRequested=true;
+}
+async function waitForRetryRequest(){
+  videoRetryRequested=false;
+  while(!videoRetryRequested&&!stopping)await sleep(150);
+}
+async function readVideoStream(){
+  const response=await fetch(`/${token}/stream`,{cache:"no-store"});
+  if(response.status===415){videoUnsupported=true;showUnsupported(await response.text());return}
+  if(!response.ok)throw new Error(await response.text());
+  const reader=response.body.getReader();
+  while(true){
+    const {done,value}=await reader.read();if(done)break;
+    feed(value);
+  }
+}
+async function startVideo(){
+  if(!("VideoDecoder" in window)){status.textContent="WebCodecs not available";return}
+  await probeAcceleration();
+  // The video stream ends whenever the ADB link to the phone drops - routine
+  // over Wi-Fi, e.g. every time the phone dozes. Without a retry the window
+  // would keep its last frame forever, alive and responding but permanently
+  // frozen, while the control WebSocket reconnects on its own. Retry for as
+  // long as the session lives so the picture comes back by itself.
+  // How many starts in a row may fail, with the phone still attached, before
+  // the window stops knocking and shows the reason instead. A start that ran
+  // for two seconds is not a failure and resets the count. Four is enough for
+  // a phone that is merely slow to settle after a reconnect, and few enough
+  // that a phone that cannot mirror says so within seconds instead of never.
+  const MAX_START_FAILURES=4;
+  let attempt=0,failures=0,lastError="";
+  while(!stopping){
+    if(videoUnsupported){
+      // 415: the phone said, in words, that it cannot. Nothing retries on
+      // its own; the panel offers a button, and only that continues here.
+      await waitForRetryRequest();
+      if(stopping)break;
+      videoUnsupported=false;attempt=0;failures=0;
+    }
+    videoStreamActive=true;
+    const startedAt=performance.now();
+    try{
+      await readVideoStream();
+    }catch(error){
+      lastError=error.message;
+      status.textContent="Error: "+error.message;
+    }finally{
+      videoStreamActive=false;
+    }
+    if(videoUnsupported)continue;
+    // Only a stream that actually ran resets the backoff. While the phone is
+    // unreachable the request still succeeds - it is the local server that
+    // answers - and then ends within milliseconds, so counting that as success
+    // pinned the delay at its minimum and retried twice a second forever.
+    if(performance.now()-startedAt>2000){attempt=0;failures=0}
+    else failures++;
+    if(stopping)break;
+    // A half-read packet left over from the dead stream would desynchronise the
+    // parser on the new one, and the new agent always opens with a fresh config
+    // packet and keyframe - so drop the buffer and wait for that keyframe.
+    pendingLength=0;
+    awaitingKey=true;
+    // Ask the host who is right before trying again. A stream can die with the
+    // phone still attached - it dozed, the agent was killed - and that is worth
+    // retrying by itself. A phone that has LEFT is not: that one waits for a
+    // person, in the panel.
+    await checkLink();
+    if(linkDown){
+      await waitWhileLinkDown();
+      if(stopping)break;
+      attempt=0;failures=0;
+      continue;
+    }
+    if(failures>=MAX_START_FAILURES){
+      // The phone is here and the mirror will not start. Say why, and wait
+      // for a person: the same knock a fifth time is not going to open it.
+      showStartFailure(lastError);
+      await waitForRetryRequest();
+      if(stopping)break;
+      attempt=0;failures=0;
+      continue;
+    }
+    attempt++;
+    status.textContent="Reconnecting to the phone…";
+    await sleep(Math.min(400*attempt,3000));
+  }
+}
+
+let control=null;
+function openControl(){
+  const scheme=location.protocol==="https:"?"wss":"ws";
+  control=new WebSocket(`${scheme}://${location.host}/${token}/control`);
+  control.binaryType="arraybuffer";
+  control.onclose=()=>{
+    controlReconnects++;
+    // Reopening asks the host to start the control agent on the phone, so this
+    // is a third loop that has to stop when the phone leaves - it was the one
+    // reconnecting every 300 ms. The panel's reconnect calls openControl again.
+    if(linkDown)return;
+    if(!document.hidden)setTimeout(openControl,300);
+  };
+}
+function sendPointer(action,point){
+  if(!control||control.readyState!==WebSocket.OPEN)return;
+  lastInputAt=performance.now();
+  const bytes=new Uint8Array(10),view=new DataView(bytes.buffer);
+  bytes[0]=1;bytes[1]=action;view.setFloat32(2,point.x,false);view.setFloat32(6,point.y,false);
+  control.send(bytes);
+}
+/**
+ * One step of a two-finger pinch: 0 begin, 1 move, 2 end, 3 cancel - same
+ * numbering as KIND_PINCH in the agent and the host, which this must match.
+ * p1/p2 are each {x,y} normalized 0..1, same convention as sendPointer.
+ */
+function sendPinch(action,p1,p2){
+  if(!control||control.readyState!==WebSocket.OPEN)return;
+  lastInputAt=performance.now();
+  const bytes=new Uint8Array(18),view=new DataView(bytes.buffer);
+  bytes[0]=6;bytes[1]=action;
+  view.setFloat32(2,p1.x,false);view.setFloat32(6,p1.y,false);
+  view.setFloat32(10,p2.x,false);view.setFloat32(14,p2.y,false);
+  control.send(bytes);
+}
+/** A real Android scroll event, not a faked swipe. `delta` is in wheel
+ * "notches" (roughly one per physical click), signed - see runPinch's
+ * sibling listener below for where that number comes from. */
+function sendScroll(point,delta){
+  if(!control||control.readyState!==WebSocket.OPEN)return;
+  lastInputAt=performance.now();
+  const bytes=new Uint8Array(13),view=new DataView(bytes.buffer);
+  bytes[0]=7;
+  view.setFloat32(1,point.x,false);view.setFloat32(5,point.y,false);
+  view.setFloat32(9,delta,false);
+  control.send(bytes);
+}
+function sendKey(code,ctrl){
+  lastInputAt=performance.now();
+  if(control&&control.readyState===WebSocket.OPEN){
+    const bytes=new Uint8Array(6),view=new DataView(bytes.buffer);
+    bytes[0]=2;bytes[1]=ctrl?1:0;view.setUint32(2,code,false);control.send(bytes);
+  }else if(!ctrl)fetch(`/${token}/key?code=${code}`,{method:"POST"}).catch(()=>{});
+}
+// Largest copy carried either way, in UTF-8 bytes - MUST MATCH
+// MAX_CLIPBOARD_BYTES in the host and ClipboardBridge.MAX_BYTES in the agent.
+const MAX_CLIPBOARD_BYTES=64*1024;
+/** Puts the PC's text on the phone's clipboard and pastes it there. */
+function sendClipboard(text){
+  lastInputAt=performance.now();
+  if(!control||control.readyState!==WebSocket.OPEN)return;
+  const body=new TextEncoder().encode(text);
+  if(body.length>MAX_CLIPBOARD_BYTES){
+    flashModeToast("Too large to paste (over 64 KB)");
+    return;
+  }
+  const bytes=new Uint8Array(2+body.length);
+  bytes[0]=8;bytes[1]=1;bytes.set(body,2);control.send(bytes);
+}
+function point(event){
+  const rect=canvas.getBoundingClientRect();
+  const xv=Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width));
+  const yv=Math.max(0,Math.min(1,(event.clientY-rect.top)/rect.height));
+  // The rect already reflects the CSS rotate(), so a tap has to be walked back
+  // through the same turn before it means anything to the phone.
+  switch(viewRotation){
+    case 90:  return{x:yv,   y:1-xv};
+    case 180: return{x:1-xv, y:1-yv};
+    case 270: return{x:1-yv, y:xv};
+    default:  return{x:xv,   y:yv};
+  }
+}
+// Android wakes on KEYCODE_WAKEUP, not on a touch: injecting a tap into a
+// sleeping phone does nothing at all, which is why a mirror that went black
+// stayed black until the phone was picked up or the session restarted (the
+// session start already sends this same key - that is what made restarting
+// "work").
+//
+// Sent on every press rather than only when the screen looks off, because
+// there is no honest way to tell from here: the video stops arriving whenever
+// nothing MOVES, so a still screen and a sleeping one look identical - the
+// session logs have plenty of multi-second gaps with the phone wide awake. WAKEUP is
+// idempotent, so sending it always is both simpler and safer than guessing;
+// on a phone that is already awake it does nothing. The tap goes through
+// either way, so waking never costs the press that asked for it.
+const WAKE_KEY=224;
+let lastWakeAt=-10000;
+// Right-click is BACK - the mapping most phone-mirroring tools use, and what
+// anyone coming from one reaches for - not the SAME touch as a left-click, a
+// duplicate press indistinguishable from the real one.
+const BACK_KEY=4;
+// Middle-click (pressing the wheel down as a button, not spinning it) is HOME
+// - the same reasoning as right-click/BACK: the wheel button is otherwise
+// unused here, and landing on the home screen is exactly the kind of one-shot
+// press a spare button is for. Not gated behind game mode, same as BACK -
+// neither one is a key that would otherwise be typed into the phone.
+const HOME_KEY=3;
+canvas.addEventListener("pointerdown",event=>{
+  event.preventDefault();
+  // A real click always wins over a keyboard drag: it is the more direct,
+  // more intentional input, and the touch protocol below is single-finger -
+  // it cannot have both open at once. Ended cleanly (a real pointer-up at its
+  // last position) rather than just dropped, so the phone never sees a touch
+  // that started and never finished.
+  if(keyDragActive)endKeyDrag();
+  // Before the button check, so a right-click or middle-click still wakes a
+  // black screen. Throttled so a burst of taps or a scroll does not send one
+  // per press.
+  if(performance.now()-lastWakeAt>1000){lastWakeAt=performance.now();sendKey(WAKE_KEY)}
+  if(event.button===2){sendKey(BACK_KEY);return}
+  if(event.button===1){sendKey(HOME_KEY);return}
+  pointerActive=true;canvas.setPointerCapture(event.pointerId);
+  sendPointer(0,point(event));
+});
+canvas.addEventListener("pointermove",event=>{
+  if(!pointerActive)return;pendingMove=point(event);
+  if(!moveScheduled){
+    moveScheduled=true;
+    requestAnimationFrame(()=>{moveScheduled=false;if(pendingMove){sendPointer(2,pendingMove);pendingMove=null}});
+  }
+});
+canvas.addEventListener("pointerup",event=>{
+  if(!pointerActive)return;event.preventDefault();pointerActive=false;pendingMove=null;
+  sendPointer(1,point(event));
+});
+canvas.addEventListener("pointercancel",event=>{
+  if(!pointerActive)return;pointerActive=false;pendingMove=null;sendPointer(3,point(event));
+});
+canvas.addEventListener("contextmenu",event=>event.preventDefault());
+// Keys with no character of their own. Everything printable goes through
+// sendText instead: Android has no key code for "@" or "n-tilde", and the
+// letter codes would still need the right meta state to get the case right.
+const keyCodes={Escape:111,Home:122,End:123,PageUp:92,PageDown:93,
+  ArrowUp:19,ArrowDown:20,ArrowLeft:21,ArrowRight:22,
+  Enter:66,Backspace:67,Delete:112,Tab:61,
+  F1:187,F2:26,F3:3,F4:4};
+// Android key codes for the Ctrl shortcuts passed to the phone. The host only
+// accepts these five with Ctrl held (viewer.rs, is_ctrl_shortcut_key).
+const phoneCtrlKeys={a:29,c:31,x:52,z:54};
+function sendText(text){
+  if(!text)return;
+  lastInputAt=performance.now();
+  if(control&&control.readyState===WebSocket.OPEN){
+    const body=new TextEncoder().encode(text);
+    const bytes=new Uint8Array(1+body.length);
+    bytes[0]=4;bytes.set(body,1);control.send(bytes);
+  }
+}
+// Flips the phone's panel between off and on. Deliberately NOT tracked here:
+// the agent gives the panel back on its own when the link dies or when Android
+// moves the display - a phone that dozed and woke has its screen back without
+// this window hearing a word about it. A remembered "it is off" would go stale
+// exactly then, and the next press would be spent turning off a screen that
+// was already on. The phone knows the truth, so the phone decides; this only
+// asks for a flip. Tried the other way round first and watched it go stale.
+// 2 flips the panel, 0 asks for the screen back outright - used by the
+// watcher below when it reads the phone's own report, never by a press,
+// since the only press this window has is the flip.
+function sendPanel(action){
+  if(!control||control.readyState!==WebSocket.OPEN)return;
+  const bytes=new Uint8Array(2);bytes[0]=5;bytes[1]=action;control.send(bytes);
+  // The PHONE decides what happened - it can refuse, and it lets the mode go on
+  // its own - so the toast is painted from what it reports back, never from
+  // what was just asked for. Long enough for the record to go down to the phone
+  // and the answer to come back up.
+  setTimeout(checkPanel,350);
+}
+function togglePanel(){sendPanel(2)}
+
+// ---------- The panel-off flash ----------
+// The same short flash game mode uses, not a standing warning strip: one
+// clear answer to "did that just work", gone before it gets in the way, no
+// button to dismiss because there is nothing left standing to dismiss.
+let panelKnownOff=false,panelPolling=false;
+function paintPanel(off){
+  if(off!==panelKnownOff)flashModeToast(off?"Screen off":"Screen on");
+  panelKnownOff=off;
+  if(off)startPanelPolling();
+}
+async function checkPanel(){
+  try{
+    const state=await (await fetch(`/${token}/panel`,{cache:"no-store"})).json();
+    paintPanel(!!state.off);
+  }catch(_){}
+}
+/**
+ * Runs ONLY while the screen is believed to be off, and stops the moment it is
+ * not - the same shape as the cable watcher above, and for the same reason: a
+ * window left open all day should not be asking anything forever.
+ *
+ * It is needed because the phone can give the panel back with nobody pressing
+ * anything: doze, or somebody picking the phone up. The report arrives at the
+ * host on its own, but this window has to come and read it - and without this
+ * poll, THAT particular restore would never get its flash either.
+ */
+function startPanelPolling(){
+  if(panelPolling)return;
+  panelPolling=true;
+  (async()=>{
+    while(!stopping&&panelKnownOff){
+      await sleep(2000);
+      if(stopping)break;
+      try{
+        const state=await (await fetch(`/${token}/panel`,{cache:"no-store"})).json();
+        paintPanel(!!state.off);
+      }catch(_){}
+    }
+    panelPolling=false;
+  })();
+}
+
+// ---------- Swipes from the keyboard ----------
+// A swipe is not a new kind of message: it is the SAME down / move / up the
+// mouse already sends, just generated from a key. Nothing was needed on the
+// phone for this.
+//
+// The steps and the delays between them are the point. Android decides whether
+// a gesture is a drag or a flick from where the finger was and WHEN, so a
+// down and an up with nothing in between - or all of it in the same
+// millisecond - reads as a tap in two places, not as a swipe.
+const SWIPE_STEPS=8,SWIPE_STEP_MS=16,SWIPE_LENGTH=0.34;
+let swipeBusy=false;
+async function runSwipe(directionX,directionY){
+  // Dropped rather than queued while one is already running: holding a key
+  // repeats it ~30 times a second, and a queue would still be working through
+  // the backlog seconds after the key came up. Dropping gives one swipe after
+  // another for as long as the key is held, which is what a finger does.
+  //
+  // And never while a real drag is in progress, a keyboard one, or an
+  // ACTUAL pinch (see runPinch below) - the touch protocol is one gesture
+  // at a time, whichever kind gets there first.
+  if(swipeBusy||pointerActive||keyDragActive||pinchBusy)return;
+  swipeBusy=true;
+  try{
+    const fromX=.5-directionX*SWIPE_LENGTH/2,fromY=.5-directionY*SWIPE_LENGTH/2;
+    const toX=.5+directionX*SWIPE_LENGTH/2,toY=.5+directionY*SWIPE_LENGTH/2;
+    sendPointer(0,{x:fromX,y:fromY});
+    for(let step=1;step<=SWIPE_STEPS;step++){
+      await sleep(SWIPE_STEP_MS);
+      sendPointer(2,{x:fromX+(toX-fromX)*step/SWIPE_STEPS,
+                     y:fromY+(toY-fromY)*step/SWIPE_STEPS});
+    }
+    sendPointer(1,{x:toX,y:toY});
+  }finally{swipeBusy=false}
+}
+// Named after the RESULT on screen, which is the OPPOSITE of which way the
+// finger drags. Dragging a finger up pushes the page up under it, which
+// reveals what is BELOW - the view scrolls down. To make the view go up, the
+// way an Up arrow or a scroll wheel does - show what is ABOVE - the finger has
+// to drag down instead.
+//
+// Shipped the other way round first (named after the finger, not the result):
+// swipeUp() dragged the finger up, which is exactly what made pressing W to
+// "go up" send the list down instead. Caught in testing by feel, not by reading
+// the code. Named after the effect this time, because that is the mental model
+// W/A/S/D and arrow keys carry - not "which way should the glass move".
+function swipeUp(){runSwipe(0,1)}
+function swipeDown(){runSwipe(0,-1)}
+function swipeLeft(){runSwipe(1,0)}
+function swipeRight(){runSwipe(-1,0)}
+
+// ---------- Continuous drag from the keyboard ----------
+// The swipe above is a fixed, short flick - right for a settings list or a
+// home-screen page, wrong for a game camera that has to keep panning for as
+// long as a key stays down (asked for after Fallout Shelter's vault turned
+// out taller than one swipe's reach). This is the other primitive: ONE touch
+// that goes down when the key does, keeps moving for as long as it is held,
+// and lifts when the key comes up - what holding the left mouse button and
+// dragging already does on this same canvas, just driven by a key.
+//
+// A SEPARATE action from swipe_up/etc on purpose (drag_up/etc): holding a key
+// can only mean one of the two at a time, so it needs its own key. Binding
+// the same key to both is rejected in Settings (see the clash check in
+// main.js) before either side of this file ever has to arbitrate it.
+const DRAG_TICK_MS=16;
+// Fraction of the canvas covered per second of holding the key. Tuned by
+// feel - the swipe above has a real constraint on its timing (Android reading
+// a flick vs a drag from how fast the points move); a held drag has none, it
+// only has to feel right.
+const DRAG_SPEED=0.6;
+// The point never reaches the literal edge. Android's own edge gestures - pull
+// down for notifications, swipe in from the side for Back - live there, and a
+// drag that wandered into them would trigger those instead of panning the game.
+const DRAG_MARGIN=0.08;
+// Same sign convention as the swipes above, and the same reason: what the KEY
+// should feel like is the opposite of which way the finger has to move.
+const dragDirections={
+  drag_up:{x:0,y:1},drag_down:{x:0,y:-1},
+  drag_left:{x:1,y:0},drag_right:{x:-1,y:0},
+};
+const heldDragKeys=new Set();
+// Which action a PHYSICAL key started, keyed by event.code rather than by
+// re-deriving the combo string on release. Those are not the same thing:
+// describeKey(event) reads the CURRENT modifier state, and releasing W while
+// Shift happens to still be held describes that release as "Shift+W" - which
+// does not match a binding of plain "W", and the drag would never be told to
+// stop. The physical key does not change identity just because a different
+// key was pressed or released alongside it; this does not either.
+const heldDragKeyCodes=new Map();
+let dragPoint=null,dragTimer=null,keyDragActive=false;
+function endKeyDrag(){
+  if(dragPoint)sendPointer(1,dragPoint);
+  clearInterval(dragTimer);
+  dragTimer=null;dragPoint=null;keyDragActive=false;
+  heldDragKeys.clear();heldDragKeyCodes.clear();
+}
+function dragTick(){
+  if(stopping||heldDragKeys.size===0){endKeyDrag();return}
+  let dx=0,dy=0;
+  for(const action of heldDragKeys){const d=dragDirections[action];dx+=d.x;dy+=d.y}
+  const length=Math.hypot(dx,dy);
+  if(length===0)return; // opposite keys held together cancel out; stay put
+  const step=DRAG_SPEED*(DRAG_TICK_MS/1000);
+  let x=dragPoint.x+dx/length*step,y=dragPoint.y+dy/length*step;
+  if(x<DRAG_MARGIN||x>1-DRAG_MARGIN||y<DRAG_MARGIN||y>1-DRAG_MARGIN){
+    // Out of room in this direction: lift and put the finger straight back
+    // down on the opposite side of the same travel band, so a key held past
+    // one screen's worth of motion keeps panning instead of stalling at the
+    // edge. A real finger would have to do this too - lift and reposition -
+    // just slower; the point of this feature is to not make the user do it.
+    sendPointer(1,dragPoint);
+    x=.5-dx/length*(.5-DRAG_MARGIN);y=.5-dy/length*(.5-DRAG_MARGIN);
+    dragPoint={x,y};
+    sendPointer(0,dragPoint);
+    return;
+  }
+  dragPoint={x,y};
+  sendPointer(2,dragPoint);
+}
+function startDragKey(action){
+  if(heldDragKeys.has(action))return;
+  heldDragKeys.add(action);
+  if(dragTimer)return; // already running - this key joins the direction already moving
+  // Same mutual exclusion runSwipe uses, checked here too: refusing to START
+  // is not enough on its own, since a swipe or a real drag can begin AFTER
+  // this key went down but before the timer below would have fired.
+  if(swipeBusy||pointerActive||pinchBusy){heldDragKeys.delete(action);return}
+  keyDragActive=true;
+  dragPoint={x:.5,y:.5};
+  sendPointer(0,dragPoint);
+  dragTimer=setInterval(dragTick,DRAG_TICK_MS);
+}
+function stopDragKey(action){
+  heldDragKeys.delete(action);
+}
+// Losing focus - alt-tab, clicking another window - is the one way a keyup
+// can go missing. Left held "down" here, the phone would keep panning with no
+// key actually pressed and no way to stop it short of unplugging.
+window.addEventListener("blur",()=>{if(keyDragActive)endKeyDrag()});
+
+// ---------- The wheel: scroll, and Ctrl+wheel pinch-to-zoom ----------
+// Same split as right-click=Back above: the wheel alone scrolls - a REAL
+// Android scroll event (KIND_SCROLL), more reliable for a long list or a
+// page than dragging a synthetic finger.
+// Ctrl+wheel pinches, for the one thing scroll cannot fake: a gesture that
+// reads the DISTANCE between two touches, not a position - a map's zoom
+// level, a photo.
+//
+// SIGN measured against a real Android 14 emulator, not just reasoned about:
+// a wheel notch moves scrollY the expected way, and a Ctrl+wheel-up notch
+// spreads two injected fingers apart while Ctrl+wheel-down brings them
+// together. The fingers also have to move far enough, and over enough time:
+// a pinch too small or too fast reads as noise to a real gesture recognizer
+// (Leaflet's map zoom ignores it), same as a swipe with no time between its
+// points reads as a tap instead of a drag (see SWIPE_STEPS above) - so the
+// numbers below were measured too.
+const PINCH_STEPS=14,PINCH_STEP_MS=18,PINCH_NEAR_RADIUS=0.06,PINCH_FAR_RADIUS=0.16;
+let pinchBusy=false;
+// Kept inside DRAG_MARGIN of every edge for the same reason the held drag
+// above is: Android's own edge gestures - pull down for notifications,
+// swipe in from the side for Back - live in that band, and a finger of the
+// pinch that wandered into it would trigger those instead of zooming.
+function clampPinch(value){return Math.max(DRAG_MARGIN,Math.min(1-DRAG_MARGIN,value))}
+async function runPinch(center,zoomIn){
+  // One touch gesture at a time, whichever kind gets there first - same
+  // guard runSwipe and startDragKey use, checked here too.
+  if(swipeBusy||pointerActive||keyDragActive||pinchBusy)return;
+  pinchBusy=true;
+  try{
+    // A fixed diagonal axis for where the two fingers sit. Which way they
+    // are apart does not change what a pinch MEANS - only the distance
+    // between them does - so unlike the swipe directions above, there is no
+    // "effect" here that a wrong axis could get backwards.
+    const ux=0.70710678,uy=0.70710678;
+    const fingersAt=radius=>[
+      {x:clampPinch(center.x+ux*radius),y:clampPinch(center.y+uy*radius)},
+      {x:clampPinch(center.x-ux*radius),y:clampPinch(center.y-uy*radius)},
+    ];
+    // Zoom in starts with the fingers close and spreads them apart; zoom out
+    // starts apart and brings them together - the same two shapes a real
+    // pinch makes, just picked by which one the wheel asked for, rather than
+    // one radius nudged a little either side of itself (which is what grew
+    // a negative, meaningless radius on the zoom-out side before this).
+    const startRadius=zoomIn?PINCH_NEAR_RADIUS:PINCH_FAR_RADIUS;
+    const endRadius=zoomIn?PINCH_FAR_RADIUS:PINCH_NEAR_RADIUS;
+    let [p1,p2]=fingersAt(startRadius);
+    sendPinch(0,p1,p2);
+    for(let step=1;step<=PINCH_STEPS;step++){
+      await sleep(PINCH_STEP_MS);
+      [p1,p2]=fingersAt(startRadius+(endRadius-startRadius)*step/PINCH_STEPS);
+      sendPinch(1,p1,p2);
+    }
+    sendPinch(2,p1,p2);
+  }finally{pinchBusy=false}
+}
+canvas.addEventListener("wheel",event=>{
+  event.preventDefault();
+  if(event.ctrlKey){
+    runPinch(point(event),event.deltaY<0);
+    return;
+  }
+  // ~100 CSS pixels of deltaY per physical wheel notch - the DOM's own
+  // WheelEvent.deltaMode/deltaY convention for a standard mouse wheel.
+  // Clamped so one big precise-scroll-wheel or trackpad delta cannot read
+  // as an absurd number of notches at once.
+  const notches=Math.max(-3,Math.min(3,-event.deltaY/100));
+  if(notches===0)return;
+  sendScroll(point(event),notches);
+},{passive:false});
+
+// ---------- Game mode ----------
+// Exists because of a collision that cannot be designed away: in this window
+// every printable key is TYPED INTO THE PHONE. Binding W to a swipe would take
+// the letter w away from everyone, everywhere, with no clue as to why.
+//
+// So single keys only act while this is on, and while it is on nothing is
+// typed at all. Half-and-half would be worse than either: "W moved the screen
+// but E typed an e" is not something anyone can predict.
+// Disabled for the v1 release - testing hit real bugs in it while playing a
+// game, and shipping without it beats shipping it half-broken. Nothing below
+// this line was touched: flip this
+// back to true (and undo the matching filter in the app's main.js,
+// GAME_MODE_ACTION_IDS) to bring the whole cluster back in one step.
+const GAME_MODE_ENABLED=false;
+const gameBar=document.querySelector("#gameBar");
+let gameMode=false;
+// The hint has two separate ways to go away, because they mean different
+// things. "Close" is per VISIT to game mode - turn it off and on again and it
+// is back, same as dismissing any other reminder. "Don't show again" is
+// permanent and reaches disk (dismiss-game-hint), which __GAME_HINT_DISMISSED__
+// below is this window's own copy of on the way back in.
+let gameHintClosed=false;
+const gameHintDismissed=__GAME_HINT_DISMISSED__;
+function paintGameBar(){
+  gameBar.classList.toggle("on",gameMode&&!gameHintClosed&&!gameHintDismissed);
+}
+// A short flash that says which way the press just went, EVERY time -
+// unlike the hint strip above, this has no "don't show again". It exists
+// because "Don't show again" leaves a press with no visible answer at all:
+// nothing on screen changes when game mode flips, so there was no way left
+// to tell a press that worked from one the window never saw.
+const modeToast=document.querySelector("#modeToast");
+let modeToastTimer=null;
+function flashModeToast(text){
+  modeToast.textContent=text;
+  modeToast.classList.add("show");
+  clearTimeout(modeToastTimer);
+  modeToastTimer=setTimeout(()=>modeToast.classList.remove("show"),1800);
+}
+function setGameMode(on){
+  if(!GAME_MODE_ENABLED)return;
+  gameMode=on;
+  // Entering fresh: the hint gets to say its piece again, the same as the
+  // first time. Only a session already past the panel-off warning skips
+  // straight to nothing shown.
+  if(on)gameHintClosed=false;
+  paintGameBar();
+  flashModeToast(on?"Game mode: ON":"Game mode: OFF");
+}
+function toggleGameMode(){setGameMode(!gameMode)}
+document.querySelector("#gameBarOffBtn").addEventListener("click",()=>setGameMode(false));
+document.querySelector("#gameBarCloseBtn").addEventListener("click",()=>{
+  gameHintClosed=true;
+  paintGameBar();
+});
+document.querySelector("#gameBarNeverBtn").addEventListener("click",()=>{
+  gameHintClosed=true;
+  paintGameBar();
+  fetch(`/${token}/dismiss-game-hint`,{method:"POST"}).catch(()=>{});
+});
+/**
+ * Whether this press is a key that would otherwise be typed into the phone.
+ *
+ * Shift counts as bare: Shift+W is how a capital W is typed, so treating it as
+ * a safe combination would take capitals away instead of lower case. Ctrl and
+ * Alt do not type anything, so they are always safe.
+ *
+ * THE SETTINGS SCREEN MAKES THE SAME JUDGEMENT (app main.js, needsGameMode) to
+ * decide what to warn about. Keep them in step.
+ */
+function needsGameMode(event){
+  return !event.ctrlKey&&!event.altKey&&[...event.key].length===1;
+}
+
+// The user's shortcuts, put here by the host from keybindings.json - the file
+// the app's settings screen writes. Read when this page was served, so a
+// shortcut changed since then applies to the NEXT window, which is what the
+// settings screen tells the user.
+const keyBindings=__KEYBINDINGS__;
+// The other two of Android's three nav buttons - BACK already has its own
+// fixed gesture (right-click, above) and does not need a keybinding slot.
+// Unbound by default, same as the drag_* actions: middle-click already covers
+// Home (see HOME_KEY above), and neither one has an obvious key of its own to
+// claim without asking first.
+const RECENTS_KEY=187;
+function goHome(){sendKey(HOME_KEY)}
+function openRecents(){sendKey(RECENTS_KEY)}
+/**
+ * Puts this window back to the shape of the picture it is showing. Ctrl+R by
+ * default, rebindable in Settings like the other shortcuts.
+ *
+ * The window already does this by itself when the phone turns (see
+ * noteFrameSize) - this is the manual override for when that does not fire:
+ * a frame size that changed without the orientation flipping, a resize the
+ * host refused, a window the user reshaped by hand.
+ *
+ * What it deliberately does NOT do is spin the picture. The pixels arrive
+ * already laid out by Android, so turning them here only ever produces a
+ * sideways, unreadable screen. If the phone's
+ * screen is portrait, no key on this side can make it read landscape.
+ */
+function rotateView(){
+  viewRotation=(viewRotation+90)%360;
+  // Clear the "shape unchanged" guard so this always acts, which is the
+  // whole point of a key you press when the automatic path did nothing.
+  shownAspect=0;
+  reshapeWindow();
+  layoutCanvas();
+}
+// What each action id actually does. An id the app knows and this build does
+// not simply never matches, which is what lets a newer app talk to an older
+// engine without either of them checking versions.
+function toggleFill(){
+  fillMode=!fillMode;
+  layoutCanvas();
+  flashModeToast(fillMode?"Fill on - the edges of the phone screen are cut":"Fill off - the whole phone screen");
+  fetch(`/${token}/view?fill=${fillMode?1:0}`,{method:"POST"}).catch(()=>{});
+}
+// The app's tab has a Fill button too. It cannot reach into this page (another
+// origin), so it asks by message; only that one request is understood.
+window.addEventListener("message",event=>{
+  if(event.source===window.parent&&event.data&&event.data.mirryl==="toggle-fill")toggleFill();
+});
+const keyActions={panel_power:togglePanel,game_mode:toggleGameMode,
+  swipe_up:swipeUp,swipe_down:swipeDown,swipe_left:swipeLeft,swipe_right:swipeRight,
+  home:goHome,recent_apps:openRecents,rotate_view:rotateView,fill_screen:toggleFill};
+// Name the key that gets out, whatever it has been remapped to. A mode that
+// stops the keyboard typing has to say how to leave it, and saying "F12" when
+// the user changed it to something else would be worse than saying nothing.
+if(keyBindings.game_mode){
+  document.querySelector("#gameBarOffBtn").textContent="Turn off ("+keyBindings.game_mode+")";
+}
+/**
+ * Writes a key press the way shortcuts are stored: "Ctrl+Shift+O", "Alt+F5",
+ * "F9". Modifiers always in this order.
+ *
+ * THE SETTINGS SCREEN HAS THE SAME FUNCTION (app main.js, describeKey). That
+ * one writes the file and this one matches against it, so a difference between
+ * them is a shortcut that saves and then never fires. Change both.
+ */
+function describeKey(event){
+  const parts=[];
+  if(event.ctrlKey)parts.push("Ctrl");
+  if(event.altKey)parts.push("Alt");
+  if(event.shiftKey)parts.push("Shift");
+  const key=event.key;
+  if(key==="Control"||key==="Alt"||key==="Shift"||key==="Meta")return null;
+  parts.push([...key].length===1?key.toUpperCase():key);
+  return parts.join("+");
+}
+window.addEventListener("keydown",event=>{
+  // The user's shortcuts get first refusal on every press, before this handler
+  // starts typing letters into the phone.
+  //
+  // WARNING that belongs with panel_power until the window shows it: with the
+  // phone's screen off the touchscreen stays ALIVE and the phone will not
+  // auto-lock. One put in a pocket in that state registers taps on its own.
+  const pressed=describeKey(event);
+  if(pressed){
+    const gated=needsGameMode(event);
+    for(const action in keyBindings){
+      if(keyBindings[action]!==pressed)continue;
+      const isDrag=!!dragDirections[action];
+      if(!isDrag&&!keyActions[action])continue;
+      // A single key is a shortcut only while game mode is on. Skipped rather
+      // than swallowed, so with game mode off the key carries on down this
+      // handler and gets typed exactly as it always did.
+      if(gated&&!gameMode)continue;
+      event.preventDefault();
+      // A drag STARTS here and is stopped by the matching keyup below, not
+      // fired once like everything else in keyActions - it has to keep going
+      // for as long as the key stays down, not just for this one event.
+      if(isDrag){
+        heldDragKeyCodes.set(event.code,action);
+        startDragKey(action);
+      }else keyActions[action]();
+      return;
+    }
+  }
+  // Ctrl+A/C/X/Z go to the phone as the real combination, so its text field
+  // selects all, copies, cuts or undoes. What the phone copies comes back to
+  // the PC's clipboard by itself (ClipboardBridge in the agent). Ctrl+V is
+  // not here: it carries on to the paste listener below, which has the PC's
+  // text. After the user's shortcuts above, so a binding still wins - the
+  // settings screen refuses these five for exactly that reason.
+  if(event.ctrlKey&&!event.altKey&&!event.metaKey&&!event.shiftKey){
+    const code=phoneCtrlKeys[event.key.toLowerCase()];
+    if(code){event.preventDefault();sendKey(code,true);return}
+  }
+  // Leave the browser's own shortcuts alone (paste, reload...) instead of
+  // typing stray letters into the phone.
+  if(event.ctrlKey||event.metaKey||event.altKey)return;
+  const code=keyCodes[event.key];
+  if(code){event.preventDefault();sendKey(code);return}
+  // event.key is a single code point for a printable key; named keys
+  // ("Shift", "F5", ...) are longer, which separates the two cleanly.
+  if([...event.key].length===1){
+    event.preventDefault();
+    // Swallowed in game mode, bound to something or not. Typing SOME letters
+    // into a game while others move the screen is the confusing half-state
+    // this mode exists to avoid; the strip along the bottom is what stops the
+    // dead keyboard being a mystery.
+    if(!gameMode)sendText(event.key);
+  }
+});
+// The other half of a held drag: nothing above stops it on its own, since
+// keydown alone has no "the key came back up" moment.
+//
+// Looked up by event.code (which action THIS PHYSICAL KEY started), not by
+// re-deriving the combo string the way keydown does - see heldDragKeyCodes
+// above for why: modifier state can drift between a key going down and that
+// same key coming back up, and the drag has to stop on the latter regardless.
+window.addEventListener("keyup",event=>{
+  const action=heldDragKeyCodes.get(event.code);
+  if(!action)return;
+  heldDragKeyCodes.delete(event.code);
+  stopDragKey(action);
+});
+// Ctrl+V pastes the PC's clipboard into the phone: the text is put on the
+// phone's clipboard and pasted there, so it arrives in one piece (emoji too,
+// which typing could not do) and stays on the phone to paste again. It used
+// to be typed key by key. With no text on the PC's clipboard (an image, say)
+// Ctrl+V goes to the phone as it is and pastes whatever the phone has.
+const V_KEY=50;
+window.addEventListener("paste",event=>{
+  event.preventDefault();
+  const data=event.clipboardData||window.clipboardData;
+  const text=data?data.getData("text"):"";
+  if(text)sendClipboard(text);
+  else sendKey(V_KEY,true);
+});
+
+async function startAudio(){
+  if(!window.AudioContext||!window.AudioWorkletNode)return;
+  try{
+    const audioContext=new AudioContext({latencyHint:"interactive",sampleRate:48000});
+    const workletSource=`class MirrylPcm extends AudioWorkletProcessor{
+constructor(){super();this.q=[];this.i=0;this.buffered=0;this.dropped=0;this.reports=0;this.port.onmessage=e=>{
+const s=e.data;this.q.push(s);this.buffered+=s.length;
+const limit=sampleRate*.08*2;while(this.buffered>limit&&this.q.length>1){
+const old=this.q.shift();this.dropped+=Math.max(0,old.length-this.i)/2;
+this.buffered-=old.length;this.i=0}}}
+process(_i,outputs){const out=outputs[0];for(let f=0;f<out[0].length;f++){
+while(this.q.length&&this.i>=this.q[0].length){this.buffered-=this.q[0].length;this.q.shift();this.i=0}
+if(this.q.length){const s=this.q[0];out[0][f]=s[this.i++]||0;out[1][f]=s[this.i++]||0}
+else{out[0][f]=0;out[1][f]=0}}
+if(++this.reports>=32){this.reports=0;this.port.postMessage({
+bufferedFrames:Math.max(0,this.buffered-this.i)/2,droppedFrames:this.dropped})}
+return true}}registerProcessor("mirryl-pcm",MirrylPcm)`;
+    const moduleUrl=URL.createObjectURL(new Blob([workletSource],{type:"text/javascript"}));
+    await audioContext.audioWorklet.addModule(moduleUrl);URL.revokeObjectURL(moduleUrl);
+    const player=new AudioWorkletNode(audioContext,"mirryl-pcm",{numberOfOutputs:1,
+      outputChannelCount:[2]});player.connect(audioContext.destination);await audioContext.resume();
+    player.port.onmessage=event=>{
+      audioBufferedMs=Math.round(event.data.bufferedFrames/48);
+      audioDrops=Math.round(event.data.droppedFrames);
+    };
+    // Same story as the video stream: audio dies with the ADB link, so retry it
+    // too. Otherwise the picture came back on reconnect and the sound never did.
+    // Only the transfer is retried - the AudioContext and worklet above are set
+    // up once and reused.
+    let attempt=0;
+    while(!stopping&&!audioUnsupported){
+      const startedAt=performance.now();
+      try{
+        const response=await fetch(`/${token}/audio`,{cache:"no-store"});
+        if(response.status===415){audioUnsupported=true;console.warn("Mirryl audio:",await response.text());break}
+        if(!response.ok)throw new Error(await response.text());
+        const reader=response.body.getReader();let remainder=new Uint8Array();
+        while(true){
+          const {done,value}=await reader.read();if(done)break;
+          const bytes=join([remainder,value]),complete=bytes.length-bytes.length%4;
+          if(complete){
+            audioBytes+=complete;
+            const view=new DataView(bytes.buffer,bytes.byteOffset,complete);
+            const samples=new Float32Array(complete/2);
+            for(let i=0;i<samples.length;i++)samples[i]=view.getInt16(i*2,true)/32768;
+            player.port.postMessage(samples,[samples.buffer]);
+          }
+          remainder=bytes.slice(complete);
+        }
+      }catch(error){console.warn("Mirryl audio:",error.message)}
+      // Same rule as video: a stream that died on arrival is not a success.
+      if(performance.now()-startedAt>2000)attempt=0;
+      if(stopping)break;
+      // And the same rule about the phone having left: wait for the person
+      // instead of asking adb for a device that is not there.
+      if(linkDown){
+        await waitWhileLinkDown();
+        if(stopping)break;
+        attempt=0;
+        continue;
+      }
+      attempt++;
+      // After a few failures in a row, ask less often: a phone that keeps
+      // refusing audio is not going to change its mind every three seconds,
+      // and every ask starts a process on it. Sound still comes back on its
+      // own if the phone ever allows it.
+      await sleep(attempt>=4?30000:Math.min(400*attempt,3000));
+    }
+  }catch(error){console.warn("Mirryl audio:",error.message)}
+}
+
+function percentile95(samples){
+  if(!samples.length)return 0;
+  samples.sort((a,b)=>a-b);
+  const value=samples[Math.min(samples.length-1,Math.floor(samples.length*.95))];
+  samples.length=0;
+  return Math.round(value);
+}
+setInterval(()=>{
+  const now=performance.now();
+  const backlog=latestPresentedPts
+    ? Math.max(0,Math.round((latestReceivedPts-latestPresentedPts)/1000))
+    : 0;
+  const queue=decoder?decoder.decodeQueueSize:0;
+  const packetGap=Math.round(now-lastPacketAt),decodeGap=Math.round(now-lastDecodeAt);
+  const renderGap=Math.round(now-lastRenderAt);
+  const activelyControlling=now-lastInputAt<2500;
+  if(videoStreamActive&&!document.hidden&&activelyControlling&&packetGap>1200&&!sourceFreezeActive){
+    sourceFreezeActive=true;sourceFreezes++;
+  }else if(packetGap<500){sourceFreezeActive=false}
+  if(videoStreamActive&&!document.hidden&&packetGap<500&&renderGap>1200&&!renderFreezeActive){
+    renderFreezeActive=true;renderFreezes++;
+  }else if(renderGap<500||packetGap>800){renderFreezeActive=false}
+  const decodeP95=percentile95(decodeSamples),renderP95=percentile95(renderSamples);
+  const query=`queue=${queue}&backlog=${backlog}&recoveries=${recoveries}&fps=${reportedFps}`+
+    `&packets=${packets}&decoded=${decoded}&rendered=${rendered}&dropped=${dropped}`+
+    `&pending=${pendingLength}&packet_gap=${packetGap}&decode_gap=${decodeGap}`+
+    `&render_gap=${renderGap}&decode_p95=${decodeP95}&render_p95=${renderP95}`+
+    `&decoder_errors=${decoderErrors}&canvas_errors=${canvasErrors}`+
+    `&source_freezes=${sourceFreezes}&render_freezes=${renderFreezes}`+
+    `&audio_bytes=${audioBytes}&audio_buffer=${audioBufferedMs}&audio_drops=${audioDrops}`+
+    `&control_reconnects=${controlReconnects}`+
+    // What this really set out to measure: how many turns the browser gave
+    // in this second, the worst gap between two, and its window's state.
+    `&raf_ticks=${rafTicks}&raf_worst_gap=${Math.round(rafWorstGap)}`+
+    `&hidden=${document.hidden?1:0}&focused=${document.hasFocus()?1:0}`;
+  fetch(`/${token}/telemetry?${query}`,
+    {method:"POST"}).catch(()=>{});
+  queuePeak=queue;
+  rafTicks=0;rafWorstGap=0;
+},1000);
+openControl();startVideo();startAudio();
+</script>
+</body>
+</html>

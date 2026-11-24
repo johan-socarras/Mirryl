@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mirryl</string>
+    <string name="app_lock_description">Asks for a PIN before the apps protected from Mirryl on your PC can be opened. It only sees which app comes to the front, never what is on the screen, and nothing leaves the phone.</string>
+</resources>

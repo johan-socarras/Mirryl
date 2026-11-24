@@ -1,0 +1,76 @@
+MIRRYL — PRIVACY
+Last updated: 2026-11-23.
+
+WHO MAKES MIRRYL
+
+Mirryl is made by Johan Socarras ("the Developer"), an independent developer working on his own. It is published, with its source code, at https://github.com/johan-socarras/Mirryl.
+
+NOTHING GOES OVER THE INTERNET
+
+Mirryl does not connect to the internet. It has no account, no activation, no analytics, no crash reporter and no usage tracking, and it sends nothing about you, your computer or your phone to anyone - the Developer included. Because Mirryl collects nothing, there is no personal data for the Developer to hold, and nobody processes any on his behalf.
+
+Earlier versions checked a license with an online activation service each time they started. That check is gone, and so is everything it sent.
+
+Pairing and mirroring talk to your phone directly, over USB or over your local network. The mirroring engine does run a small web server while it is mirroring, but it is bound to 127.0.0.1 - your own machine - and is not reachable from your network. Nothing about the phone, the apps on it, or what is on its screen leaves your computer.
+
+Two links lead outside, and only when you click them: the GitHub link on the Licenses screen, and the one on the installer's last page. Each opens the repository in your browser; from there you are on GitHub, under GitHub's own privacy terms. Mirryl itself fetches nothing from it.
+
+The installer is the one piece that may download something: if your Windows does not have Microsoft Edge WebView2, which Mirryl's windows are drawn with, the installer downloads it from Microsoft.
+
+THE ANDROID APP
+
+The Android app is not something you download or get from an app store. From version 1.0.11 it travels inside Mirryl for Windows. When Mirryl on your PC connects to your phone, it asks the phone whether the app is installed and in which version. If it is missing, or older than the copy Mirryl carries, the setup shows a button to install or update it, and nothing is installed unless you press it. Mirryl then copies the app to the phone over your own network and opens it once, because Android keeps a newly installed app from running in the background until it has been opened. Nothing is downloaded and nothing is sent anywhere. The attempt is noted in the activity log described below, with the phone's address on your network. Mirryl on your PC never uninstalls the app; you can do that on the phone whenever you like.
+
+The Android app sends nothing. It makes no network requests at all. It reads your phone's own Wi-Fi address in order to show it to you — that is the address a wireless connection needs — and it writes to three places: its own private storage on the phone, a .devid file holding a device identifier in the app's folder on external storage — so your PC can read it when pairing — and the one Android setting that turns Wireless debugging back on. Turning that setting back on is what the app is for, and it is what the WRITE_SECURE_SETTINGS permission in its manifest is for. From version 1.0.11 the manifest does not declare INTERNET, so Android itself does not let the app open a network connection. Earlier versions declared it, but no code in them used it.
+
+From version 1.0.11, when Mirryl on your PC connects to your phone it also puts the Android app on Android's battery optimization exemption list, the same way it grants that permission. Without it, Android holds back the app's background checks on a phone that has been idle, and Wireless debugging can stay off after a Wi-Fi drop until you pick the phone up. This changes nothing that is sent anywhere. You can remove the exemption on the phone under App info > Battery; Mirryl on your PC puts it back the next time it connects.
+
+WHAT MIRRORING CAPTURES
+
+Mirroring means Mirryl reads what your phone is showing and playing and brings it to this computer, over the cable or over your own network. It is worth being exact about what that includes.
+
+Your phone's screen. The picture in the mirror window is video encoded on the phone and decoded here. It is not written to a file.
+
+Your phone's sound. Mirryl also carries the audio your phone is playing, so a video or a game is heard through your computer. Two things are worth saying plainly. It is never the microphone — Mirryl contains no code that opens one, so nothing around you or said near the phone is picked up; only what the phone itself is playing. And there is no setting to turn the sound off: it starts with the mirror and stops with it.
+
+How the sound is carried depends on the phone, and you will notice the difference. On Android 13 and later Mirryl first asks for a copy, which leaves the phone playing through its own speaker as well. If the phone refuses that — and always on Android 11 and 12 — Mirryl takes the phone's output instead, and the phone's own speaker stays quiet while the mirror is open. On Android 10 and earlier there is no sound at all.
+
+What you type, paste and copy. Keys and clicks you aim at the mirror window are sent to the phone as input, and Ctrl+A, Ctrl+C, Ctrl+X and Ctrl+Z reach the phone as those shortcuts. While a mirror window is open, text is shared between the two clipboards both ways. When you paste into the mirror window, the text on your PC's clipboard is put on your phone's clipboard and pasted there; that is the only moment your PC's clipboard is read. Whenever your phone's clipboard changes while the mirror window is open — whether you copied from the PC or with the phone's own Copy button — Mirryl reads that text and puts it on your PC's clipboard, replacing what was there. With no mirror window open, Mirryl does not read your phone's clipboard. Only text is carried, up to 64 KB per copy. It travels over the cable or your own network and is not stored anywhere; the session log notes only how many bytes were carried.
+
+None of this is recorded to a file, and none of it leaves the two devices. There is no server in the middle: the picture, the sound and the input travel over the USB cable, or straight between your computer and your phone on your own network.
+
+THE APPS SCREEN
+
+From version 1.0.12, the Apps screen of a phone shows the apps installed on it and lets you act on them from the PC. To fill it, Mirryl copies a small program to the phone's temporary folder (/data/local/tmp) and runs it over the same connection as everything else; it is not installed as an app. It reads, for every app on the phone, its name, its icon, its version, when it was installed and updated, where its files are on the phone, and whether it is blocked or turned off. That list is shown on your screen and kept in memory while the screen is open. It is not written to a file and it leaves neither device.
+
+What you do from that screen is done only when you click it, and the ones that cannot be undone (deleting an app's data, uninstalling it) ask first: opening an app, stopping it, blocking or unblocking it, turning it off or on, deleting its data, uninstalling it, opening its page or a search in the phone's Play Store, and installing .apk files you choose or drop on the screen. Each one is noted in the activity log described below, with the app's package name and the phone's address. Searching the Play Store is done by the Play Store app on the phone, under Google's own terms: Mirryl only opens it with the words you typed.
+
+"Save a copy of the APK" copies that app's installation files from the phone to your computer, in Documents\Mirryl\<the phone's name>\APKs. It copies the app, not its data. The copy is yours to keep or delete, and uninstalling Mirryl leaves it where it is.
+
+PIN protection. From version 1.0.12, an app can be protected with a PIN from that screen: it keeps working, but asks for the PIN before it opens. You choose the PIN on the PC, and Mirryl sends it to the phone over the same connection; the Android app keeps only a salted hash of it (PBKDF2) in its own private storage, together with the list of protected apps, and the PC keeps neither. To know when a protected app comes to the front, the Android app runs an accessibility service, which Mirryl on your PC turns on over that connection. That service reads only the name of the app whose window comes to the front - never the content of any screen - and keeps nothing of it: it decides whether to show the PIN screen, and forgets. Nothing about it leaves the phone. Protecting the first app also protects Android's screens to install and uninstall apps, so the Mirryl app cannot be removed to get around the PIN. If the PIN is forgotten, Mirryl on the PC changes it or removes the protection without asking for it. Each change is noted in the activity log, without the PIN. Every few minutes the reconnection service described below asks each connected phone whether apps are protected and the PIN service is off; if so, it turns the service back on and writes a line saying so in its log, which Mirryl shows you once. It asks only that, and nothing leaves your computer.
+
+Several phones at once. "Save as profile" keeps, under the name you give it, the names of the apps a phone has blocked and behind the PIN; profiles are stored in the same folder as your device list (profiles.json) and stay on your computer. Applying a profile to one or several phones does on each one what the Apps screen would. "Export apps" writes the list of apps of the phones you choose - each phone's name, each app's name, package, version, whether it came with the phone, whether it is blocked, off or behind the PIN, and when it was installed and updated - to a CSV file in Documents\Mirryl\Inventory, and shows it to you. It is yours to keep or delete, and uninstalling Mirryl leaves it where it is.
+
+WHAT STAYS ON YOUR COMPUTER
+
+Your device list and settings. Mirryl keeps a folder in your Windows user profile holding the list of phones you have paired — each one's alias, its address on your network, its hardware serial number, and when it was last seen connected — the notes the reconnection service keeps for itself, a private key that identifies this PC to your phone, and preferences like theme and keyboard shortcuts. The private key is generated on your machine and never leaves it. None of this is sent anywhere.
+
+Files from earlier versions. Up to version 1.0.0, Mirryl could save Android bug reports and screenshots under Documents\Mirryl, in a folder named after the device. Version 1.0.1 removed that, and version 1.0.11 moved the activity log described below out of that folder too. Since then the only things written there are the APK copies and the app lists you ask for on the Apps screen (above). If an older folder is still on your computer, it belongs to you and you can delete it - and it is worth knowing what is in it, because an Android bug report can contain that phone's serial number, the list of apps installed on it, and system logs. Nothing there was ever uploaded.
+
+An activity log. Mirryl appends plain text to activity.log in a Mirryl folder in your Windows user profile (%LOCALAPPDATA%\Mirryl, beside the other logs), recording things like installing the Android app on a phone, restarting a phone, what was done to an app from the Apps screen, or a problem with the file that identifies this PC to your phones. It is written for you, not for the Developer, and is never uploaded. It is kept under 2 MB: when it grows past that, only its most recent 500 lines are kept. It is deleted when Mirryl is uninstalled, and you can delete it yourself whenever you like. Versions before 1.0.11 kept this file as Documents\Mirryl\activity.log, without a limit; the first time 1.0.11 runs it deletes that old file, and the Documents\Mirryl folder if nothing else is left in it.
+
+Session logs from the mirroring engine. While mirroring, the engine writes one log file per session, in a Mirryl folder in your Windows user profile (%LOCALAPPDATA%\Mirryl\engine\logs). It records per-second figures about the connection — frame rate, latency, dropped frames — and, so that a fault can be traced back to the phone it happened on, which phone the session was with: its hardware serial number over a cable, or its address on your network over Wi-Fi, together with the alias you gave it. It also copies the lines the Mirryl agent writes to the phone's own system log while the session runs. It does not contain the picture, the sound, or anything you typed.
+
+These logs stay on your computer and are never uploaded. Mirryl keeps the most recent of them up to 5 MB per phone and deletes that phone's oldest beyond that, so one phone's sessions never push out another's. The check happens when a mirror session starts, so a long session can carry a phone over the limit while it runs and is tidied up at the next one. You can delete the folder yourself whenever you like.
+
+The other logs, all in that same Mirryl folder, all kept for you and never uploaded, and all deleted when Mirryl is uninstalled: the reconnection service's log (watcher.log: one line every 25 seconds about which phones it sees, with their serial numbers and network addresses), one short status file per phone that the mirroring engine overwrites on every session (mirryl-engine-<serial>.log), the pairing log (qr_pairing.log: each step of a QR pairing), and the setup log (setup.log: what the installer and the Repair button did). Each of these is kept under 2 MB; past that only its most recent 500 lines stay.
+
+When you uninstall. The uninstaller deletes every one of those logs without asking, and offers to remove the startup task and the firewall rules it created (that needs administrator permission once, which is why it asks). It keeps your device list and the private key that identifies this PC to your phones, unless you tick "Delete app data" — and it warns you before doing that, because a new key is not accepted by phones that know the old one, so every phone would have to be set up again.
+
+CHANGES TO THIS POLICY
+
+If a future version of Mirryl changes what it keeps or starts sending anything anywhere, it will be described here with a new date rather than folded in silently.
+
+CONTACT
+
+Questions about this policy can be asked as issues on the repository: https://github.com/johan-socarras/Mirryl

@@ -1,0 +1,8 @@
+[workspace]
+members = ["crates/mirador-core", "crates/mirador-host"]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+license = "LicenseRef-PolyForm-Shield-1.0.0"
+version = "0.1.34"

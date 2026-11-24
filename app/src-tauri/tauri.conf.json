@@ -1,0 +1,64 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Mirryl",
+  "mainBinaryName": "Mirryl",
+  "version": "1.0.12",
+  "identifier": "com.awadb.assistant",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Mirryl",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 560,
+        "maximized": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.ico"],
+    "copyright": "© 2026 Johan Socarras · github.com/johan-socarras/Mirryl",
+    "publisher": "Mirryl",
+    "resources": {
+      "THIRD_PARTY_LICENSES.txt": "THIRD_PARTY_LICENSES.txt",
+      "COMPONENT-INVENTORY.txt": "COMPONENT-INVENTORY.txt",
+      "mpl-source-code.zip": "mpl-source-code.zip",
+      "EULA.txt": "EULA.txt",
+      "PRIVACY.txt": "PRIVACY.txt",
+      "Mirryl-User-Guide.pdf": "Mirryl-User-Guide.pdf",
+      "watcher.ps1": "watcher.ps1",
+      "engine/mirryl-engine.exe": "engine/mirryl-engine.exe",
+      "engine/WebView2Loader.dll": "engine/WebView2Loader.dll",
+      "platform-tools/adb.exe": "platform-tools/adb.exe",
+      "platform-tools/AdbWinApi.dll": "platform-tools/AdbWinApi.dll",
+      "platform-tools/AdbWinUsbApi.dll": "platform-tools/AdbWinUsbApi.dll",
+      "platform-tools/NOTICE.txt": "platform-tools/NOTICE.txt",
+      "phone-app/Mirryl.apk": "phone-app/Mirryl.apk",
+      "phone-app/Mirryl.apk.version": "phone-app/Mirryl.apk.version"
+    },
+    "licenseFile": "eula-installer.txt",
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "headerImage": "installer-header-dark.bmp",
+        "sidebarImage": "installer-sidebar.bmp",
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
+        "uninstallerHeaderImage": "installer-header-dark.bmp",
+        "template": "installer-template.nsi"
+      }
+    }
+  }
+}

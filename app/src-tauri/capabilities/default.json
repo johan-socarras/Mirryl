@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "What Mirryl's one window may ask of Tauri. Its own commands need no permission, but listening to events does: without these two, window.__TAURI__.event.listen is refused by the ACL, and the events the app sends the page ('mirryl-notice', 'mirror-event') never reach it.",
+  "windows": ["main"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten"
+  ]
+}

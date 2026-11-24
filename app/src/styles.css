@@ -1,0 +1,476 @@
+/* ============================================================================
+   Palette - the same numbers the Android app reads in Theme.java, so the
+   phone and this app read as one product.
+   ========================================================================= */
+:root {
+  color-scheme: light dark;
+  --bg: #f3f5ff; --surface: #ffffff; --text: #101426; --textMuted: #616983;
+  --border: rgba(23, 31, 57, 0.12);
+  --accent: #07717f; --accentHover: #055a66;
+  /* Text that sits ON the accent. White on cyan is unreadable, so it flips. */
+  --onAccent: #ffffff;
+  --accentFrom: #087f98; --accentTo: #6253db;
+  --winBorder: rgba(23, 31, 57, 0.12); --titlebar: #ffffff;
+  --track: rgba(23, 31, 57, 0.12); --chipBg: rgba(7, 113, 127, 0.09);
+  --menuGroupTint: rgba(7, 113, 127, 0.045);
+  --qrBg: #ffffff; --inputBg: #ffffff; --hoverChip: rgba(7, 113, 127, 0.13);
+  --logBg: #ffffff;
+  --success: #15803d; --warn: #8a5a00; --warnBg: rgba(138, 90, 0, 0.08);
+  --warnBorder: rgba(138, 90, 0, 0.28); --warnChip: rgba(138, 90, 0, 0.12);
+  --danger: #bd2947; --dangerBgHover: rgba(189, 41, 71, 0.1);
+  --neutral: #616983; --scrim: rgba(16, 20, 38, 0.35);
+  /* The two washes behind everything. Softer in light, where they go muddy at
+     full strength over a near-white page. */
+  --glowViolet: rgba(125, 103, 255, 0.13);
+  --glowCyan: rgba(101, 231, 255, 0.11);
+  --dots: rgba(23, 31, 57, 0.084);
+}
+/* Theme is a manual, persisted choice (see main.js applyTheme/get_theme/
+   set_theme) - it defaults to light regardless of OS preference, so this is
+   an explicit override keyed off the data-theme attribute, not a media query. */
+:root[data-theme="dark"] {
+  --bg: #070914; --surface: #111525; --text: #f7f8ff; --textMuted: #a8aec7;
+  --border: rgba(255, 255, 255, 0.12);
+  --accent: #65e7ff; --accentHover: #8ceeff;
+  --onAccent: #07111d;
+  --accentFrom: #65e7ff; --accentTo: #9b8cff;
+  --winBorder: rgba(255, 255, 255, 0.12); --titlebar: #111525;
+  --track: rgba(255, 255, 255, 0.12); --chipBg: rgba(101, 231, 255, 0.09);
+  --menuGroupTint: rgba(101, 231, 255, 0.045);
+  --qrBg: #0b0e1c; --inputBg: #0b0e1c; --hoverChip: rgba(101, 231, 255, 0.13);
+  --logBg: #0b0e1c;
+  --success: #86efac; --warn: #f5c26b; --warnBg: rgba(245, 194, 107, 0.1);
+  --warnBorder: rgba(245, 194, 107, 0.3); --warnChip: rgba(245, 194, 107, 0.16);
+  --danger: #ff7a8f; --dangerBgHover: rgba(255, 122, 143, 0.14);
+  --neutral: #a8aec7; --scrim: rgba(3, 5, 12, 0.6);
+  --glowViolet: rgba(125, 103, 255, 0.26);
+  --glowCyan: rgba(101, 231, 255, 0.22);
+  --dots: rgba(255, 255, 255, 0.084);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+/* The backdrop: two soft washes, the fine dot grid over them, then the flat
+   colour. `fixed` so the texture belongs to the window and does not slide
+   with the content. */
+body {
+  margin: 0;
+  color: var(--text);
+  font-family: 'Inter', -apple-system, Segoe UI, Roboto, Ubuntu, Arial, sans-serif;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(var(--dots) 1px, transparent 1px),
+    radial-gradient(60% 55% at 12% 10%, var(--glowViolet), transparent 70%),
+    radial-gradient(55% 50% at 90% 26%, var(--glowCyan), transparent 70%);
+  background-size: 5px 5px, auto, auto;
+  background-attachment: fixed;
+}
+
+/* ---------- Views ---------- */
+.view { display: none; padding: 28px 40px 36px; max-width: 720px; margin: 0 auto; }
+.view.active { display: block; }
+
+/* Monospaced, upper case, tracked out - what Theme.labelStyle does on
+   Android. */
+.eyebrow { font-family: 'JetBrains Mono', Consolas, ui-monospace, monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.12em; color: var(--textMuted); text-transform: uppercase; margin-bottom: 8px; }
+.view-title { font-size: 23px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; margin: 0; }
+.view-subtitle { font-size: 14px; color: var(--textMuted); margin-top: 6px; max-width: 560px; line-height: 1.5; }
+
+.view-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; gap: 16px; }
+
+/* ---------- Tabs (segmented control) ---------- */
+.tabs { display: flex; gap: 6px; padding: 4px; background: var(--surface); border-radius: 999px; border: 1px solid var(--border); flex: 0 0 auto; }
+.tabs button { border: none; background-image: none; background-color: transparent; color: var(--textMuted); font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+.tabs button.active { background-image: linear-gradient(135deg, var(--accentFrom), var(--accentTo)); color: var(--onAccent); }
+
+/* ---------- Progress track ---------- */
+.progress-track { display: flex; gap: 6px; margin-bottom: 6px; }
+.progress-track .seg { flex: 1; height: 4px; border-radius: 3px; background: var(--track); }
+.progress-track .seg.done, .progress-track .seg.current { background: var(--accent); }
+.counter { font-size: 12.5px; color: var(--textMuted); margin-bottom: 26px; }
+
+/* ---------- Cards ---------- */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; margin-bottom: 18px; }
+.card p.hint { font-size: 13px; color: var(--textMuted); margin: 0 0 14px; line-height: 1.55; }
+
+.card-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 0; overflow: hidden; }
+.card-row > div { padding: 24px; }
+.card-row > div:first-child { border-right: 1px solid var(--border); }
+
+.card-icon-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.card-icon-chip { width: 28px; height: 28px; border-radius: 9px; background: var(--chipBg); display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.card-icon-chip.lg { width: 40px; height: 40px; border-radius: 13px; }
+.card-icon-title { font-size: 15px; font-weight: 600; color: var(--text); }
+
+/* ---------- Inputs ---------- */
+.field-label { font-size: 12px; font-weight: 600; color: var(--textMuted); margin-bottom: 6px; }
+input[type=text] { width: 100%; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--inputBg); color: var(--text); font-size: 14px; margin-bottom: 14px; outline: none; }
+input.code-input { letter-spacing: 0.15em; font-family: 'JetBrains Mono', Consolas, monospace; }
+
+/* ---------- Buttons ---------- */
+/* Primary: the gradient button, corner 14, and text in --onAccent because
+   white on cyan is unreadable in the dark theme. */
+button { padding: 11px 16px; border-radius: 14px; border: 1px solid transparent; background-image: linear-gradient(135deg, var(--accentFrom), var(--accentTo)); background-color: var(--accentFrom); color: var(--onAccent); font-size: 14px; font-weight: 700; cursor: pointer; }
+button:hover { filter: brightness(1.08); }
+button:disabled { opacity: 0.5; cursor: default; filter: none; }
+/* Ghost: outline only, so it never competes with the primary. */
+button.secondary { background-image: none; background-color: transparent; color: var(--text); border-color: var(--border); font-weight: 500; }
+button.secondary:hover { border-color: var(--accent); background-color: transparent; filter: none; }
+button.ghost { background-image: none; background-color: transparent; color: var(--textMuted); border: none; font-weight: 500; }
+button.ghost:hover { color: var(--text); background-color: transparent; filter: none; }
+.btn-row { display: flex; gap: 10px; }
+.btn-row button { flex: 1; }
+
+/* ---------- Output / log ---------- */
+.output { margin-top: 10px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; white-space: pre-wrap; background: var(--bg); border-radius: 6px; padding: 10px; min-height: 18px; color: var(--textMuted); }
+/* Folded help in the setup assistant: closed by default, so it costs one line. */
+.setup-help { padding: 14px 20px; }
+.setup-help summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); }
+.setup-help .hint { font-size: 12.5px; color: var(--textMuted); line-height: 1.6; margin: 10px 0 0; }
+.setup-help ol.hint { padding-left: 20px; }
+.setup-help ol.hint li { margin-bottom: 6px; }
+.trouble-block { padding: 16px 20px; }
+.trouble-block .hint { font-size: 12.5px; color: var(--textMuted); margin-bottom: 10px; }
+
+.log-card { border: 1px solid var(--border); border-radius: 10px; background: var(--logBg); overflow: hidden; margin-top: 4px; }
+.log-header { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.log-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+.log-header span { font-size: 12px; font-weight: 600; color: var(--textMuted); letter-spacing: 0.03em; }
+.log-body { padding: 14px 16px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12.5px; color: var(--success); line-height: 1.7; white-space: pre-wrap; }
+
+/* ---------- Device Manager ---------- */
+/* No overflow:hidden here on purpose - it would clip the "more actions"
+   dropdown (position:absolute, can extend past the list's own box). Corners
+   are rounded on the first/last row directly instead. */
+.device-list { border: 1px solid var(--border); border-radius: 18px; background: var(--surface); margin-top: 20px; }
+.device-row { display: flex; align-items: center; gap: 16px; padding: 18px 22px; border-bottom: 1px solid var(--border); }
+.device-row:first-child { border-top-left-radius: 12px; border-top-right-radius: 12px; }
+.device-row:last-child { border-bottom: none; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
+.device-open { display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0; cursor: pointer; border-radius: 8px; margin: -6px 0; padding: 6px 0; }
+.device-open:hover .device-icon { background: var(--accent); }
+.device-open:hover .device-icon > div { border-color: white; }
+/* The tile fills with the accent colour on hover, so the transport icon has to
+   flip to white or it vanishes into the background. */
+.device-open:hover .device-icon svg [stroke]:not([stroke="none"]) { stroke: #fff; }
+.device-open:hover .device-icon svg [fill]:not([fill="none"]) { fill: #fff; }
+.device-open:hover .device-icon svg [opacity] { opacity: 0.5; }
+.device-icon { width: 40px; height: 40px; border-radius: 13px; background: var(--chipBg); display: flex; align-items: center; justify-content: center; flex: 0 0 auto; transition: background 0.15s; }
+.device-info { flex: 1; min-width: 0; }
+.device-alias-row { display: flex; align-items: center; gap: 10px; }
+.device-alias { font-size: 14.5px; font-weight: 600; color: var(--text); }
+input.device-alias-input { width: auto; margin-bottom: 0; padding: 4px 8px; font-size: 14.5px; font-weight: 600; }
+.device-status { display: flex; align-items: center; gap: 6px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; }
+.status-label { font-size: 12.5px; font-weight: 500; }
+.device-ip { font-size: 12.5px; color: var(--textMuted); margin-top: 3px; font-family: 'JetBrains Mono', Consolas, monospace; }
+.device-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.device-actions button { padding: 8px 14px; font-size: 13px; }
+.device-menu-wrap { position: relative; }
+.device-actions .device-menu-btn { width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; background: transparent; border: 1px solid var(--border); color: var(--text); font-size: 15px; }
+.device-actions .device-menu-btn:hover { border-color: var(--accent); background: transparent; }
+.device-menu { position: absolute; right: 0; z-index: 10; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 12px 30px -8px rgba(0,0,0,0.4); min-width: 170px; overflow: hidden; }
+.device-menu button { display: block; width: 100%; text-align: left; background: transparent; border: none; border-radius: 0; padding: 10px 14px; color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; }
+.device-menu button:hover { background: var(--chipBg); }
+/* Three visual groups, same font/colors as the rest of the menu: navigation
+   (Device tools, no tint) / actions that reach the phone itself (tinted,
+   the two lines below) / actions local to Mirryl's own bookkeeping (no
+   tint, danger stays red as it always did). The tint is its own variable,
+   not --chipBg, because --chipBg IS the hover color above - reusing it here
+   would make hovering a phone-action button invisible. */
+.device-menu button.phone-action { background: var(--menuGroupTint); }
+.device-menu button.phone-action:hover { background: var(--chipBg); }
+.device-menu .send-file-btn, .device-menu .edit-alias-btn { border-top: 1px solid var(--border); }
+.device-menu button.danger { color: var(--danger); border-top: 1px solid var(--border); }
+.device-menu button.danger:hover { background: var(--dangerBgHover); }
+
+/* ---------- Device Manager: search/filter/sort + bulk actions ---------- */
+/* Only shown with 2+ devices - see the toggle in renderDeviceManager(). */
+/* Two lines: the search box alone on the first, the two menus and Select on
+   the second. On one line the box is squeezed until its own placeholder is
+   cut off. */
+.dm-toolbar { display: flex; flex-direction: column; align-items: stretch; gap: 10px; margin-top: 20px; }
+.dm-toolbar-row { display: flex; gap: 10px; align-items: center; }
+/* A bare <input>/<select> don't share a height even with identical padding -
+   the native <select> chrome adds a few px the input doesn't have. Pinning
+   height + box-sizing on both is what lines them up.
+   The id, not a class: `input[type=text] { margin-bottom: 14px }` (the app's
+   normal form fields) is an ATTRIBUTE selector, specificity (0,1,1), and
+   beats a single class (0,1,0) wherever it sits in the file.
+   flex: 0 0 auto, not flex: 1: with the bar as a column the main axis is the
+   vertical one, so `flex: 1` (flex-basis: 0%) would rule the HEIGHT. The
+   width comes from the bar's `align-items: stretch`. */
+#dmSearchInput { flex: 0 0 auto; min-width: 0; height: 36px; box-sizing: border-box; margin: 0; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13.5px; }
+#dmSearchInput:focus { outline: none; border-color: var(--accent); }
+.dm-filter-select { height: 36px; box-sizing: border-box; padding: 0 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; flex: 1 1 0; min-width: 0; }
+/* Opens selection mode; hidden while the selection bar is up. Outlined, so it
+   never competes with Mirror / Connect for the eye. */
+#dmSelectModeBtn { height: 36px; box-sizing: border-box; padding: 0 16px; border-radius: 10px; border: 1px solid var(--border); background-image: none; background: var(--surface); color: var(--text); font-size: 13px; font-weight: 500; flex: 0 0 auto; }
+#dmSelectModeBtn:hover { border-color: var(--accent); background: var(--surface); filter: none; }
+
+.dm-selection-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: 12px; background: var(--chipBg); border: 1px solid var(--border); margin-top: 14px; font-size: 13px; font-weight: 500; }
+/* "Select every device shown" lives in the bar, next to the count it speaks
+   for - not in the toolbar, where it would steal width from the search box. */
+.dm-select-all { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+
+/* In selection mode the row's normal actions (Mirror/Connect, the per-device
+   menu) are hidden - the row itself is the control, via the checkbox. */
+.device-row.selection-mode .device-open { cursor: pointer; }
+.device-select-checkbox { width: 18px; height: 18px; margin: 0 2px 0 0; flex: 0 0 auto; cursor: pointer; accent-color: var(--accent); }
+/* With 2+ devices Device tools leaves the ⋮ menu, and Send file becomes its
+   first line: no separator above the first line. */
+.device-menu button:first-child { border-top: none; }
+/* Bulk results list one phone per line. */
+#confirmBody { white-space: pre-line; }
+
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 70px 0 30px; }
+.empty-state-title { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+.empty-state-body { font-size: 14px; color: var(--textMuted); max-width: 360px; line-height: 1.55; margin-bottom: 26px; }
+
+/* Windows setup notice (missing firewall rules / auto-reconnect watcher). */
+.system-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-top: 22px; padding: 14px 18px; border-radius: 18px; background: var(--warnBg); border: 1px solid var(--warnBorder); }
+/* wrap + a flex-basis floor: without them the text column keeps shrinking as
+   the window narrows and the notice grows to ~40% of the minimum window
+   height. With them the buttons drop to their own line instead. */
+.system-notice p { flex: 1 1 220px; font-size: 13px; color: var(--text); line-height: 1.5; margin: 0; }
+.system-notice .notice-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+.system-notice button { flex: 0 0 auto; background-image: linear-gradient(135deg, var(--accentFrom), var(--accentTo)); color: var(--onAccent); border: none; padding: 8px 16px; font-size: 13px; }
+.system-notice button.ghost { background-image: none; background-color: transparent; color: var(--textMuted); border: 1px solid var(--border); }
+.system-notice button.ghost:hover { color: var(--text); }
+/* A finished repair is news, not a fault: the amber above would read as
+   "something is still wrong", so the report uses the neutral chip surface. */
+.system-notice.is-info { background: var(--chipBg); border-color: var(--border); }
+/* A cabled phone offered as the last row of the list. Dashed and muted so it
+   reads as "available to add", never as a device that is already set up. */
+.offer-row { border-top: 1px dashed var(--border); background: transparent; }
+.offer-row .device-icon { background: transparent; border: 1px dashed var(--border); }
+.offer-row .device-alias { color: var(--textMuted); font-weight: 600; }
+.offer-row .device-ip { color: var(--textMuted); }
+/* ---------- Licenses view ---------- */
+.back-link { display: flex; align-items: center; gap: 8px; margin-bottom: 26px; font-size: 13px; color: var(--textMuted); text-decoration: none; cursor: pointer; }
+.back-link:hover { color: var(--accent); }
+.about-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
+.about-header img { width: 56px; height: 56px; border-radius: 14px; }
+.about-header .name { font-size: 20px; font-weight: 700; }
+.about-header .ver { font-size: 13px; color: var(--textMuted); margin-top: 2px; }
+.about-header a { display: inline-block; font-size: 13px; color: var(--accent); margin-top: 4px; cursor: pointer; }
+.about-header a:hover { text-decoration: underline; }
+.section-label { font-size: 13px; font-weight: 600; color: var(--textMuted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 14px; }
+
+/* ---------- Settings ----------
+   One row shape for every setting: what it is on the left, the control on the
+   right. The shortcut rows are the same shape, so a new action added to
+   SHORTCUT_ACTIONS lands looking like it always belonged. */
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.setting-row:first-child { padding-top: 0; }
+.setting-row:last-child { border-bottom: none; padding-bottom: 0; }
+.setting-text { min-width: 0; }
+.setting-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.setting-desc { font-size: 12.5px; color: var(--textMuted); margin-top: 3px; line-height: 1.5; }
+/* The capture box. Monospace because it holds a key combination, and fixed
+   width so the row does not jump between "Ctrl+O" and "Press a key…". */
+.shortcut-box { font-family: 'JetBrains Mono', Consolas, ui-monospace, monospace; font-size: 12.5px; font-weight: 600; min-width: 150px; text-align: center; padding: 9px 12px; }
+.shortcut-box.listening { border-color: var(--accent); color: var(--accent); font-weight: 500; }
+.shortcut-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.shortcut-actions button.ghost { padding: 9px 10px; font-size: 12.5px; }
+.license-entry { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--border); margin-bottom: 18px; }
+.license-entry .lib-name { font-size: 14.5px; font-weight: 600; }
+.license-entry .lib-desc { font-size: 13px; color: var(--textMuted); margin-top: 4px; line-height: 1.55; max-width: 480px; }
+.license-entry a { flex: 0 0 auto; font-size: 13px; color: var(--accent); text-decoration: none; white-space: nowrap; padding-top: 2px; cursor: pointer; }
+.license-entry a:hover { text-decoration: underline; }
+/* pre-wrap re-wraps the source file's own ~77-col hard line breaks a SECOND
+   time whenever the window is narrower than that, which chops mid-word and
+   looks broken. `pre` respects only the
+   source's real line breaks and never adds its own; overflow-x gives that a
+   horizontal scrollbar instead of forcing the whole window wider. */
+.license-full-text { margin: 0; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 11.5px; white-space: pre; overflow-x: auto; color: var(--text); background: var(--bg); border-radius: 8px; padding: 14px; }
+
+/* ---------- Generic centered modal (confirm dialogs) ---------- */
+.modal-overlay { display: none; position: fixed; inset: 0; background: var(--scrim); align-items: center; justify-content: center; z-index: 200; }
+.modal-overlay.active { display: flex; }
+.modal-card { width: 400px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 30px; box-shadow: 0 20px 60px -10px rgba(0,0,0,0.5); }
+.modal-card .title { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+.modal-card .body { font-size: 14px; color: var(--textMuted); line-height: 1.6; margin-bottom: 22px; }
+.confirm-checkbox-row { display: flex; align-items: center; gap: 8px; margin: -10px 0 22px; font-size: 13.5px; color: var(--text); cursor: pointer; }
+.confirm-checkbox-row input { margin: 0; cursor: pointer; }
+.modal-card button { width: 100%; margin-bottom: 10px; }
+
+/* ---------- Wizard QR / manual pair ---------- */
+.qr-box { width: 168px; height: 168px; margin: 0 auto; background: var(--qrBg); border-radius: 10px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
+
+.status-dot-spin { width: 20px; height: 20px; border: 2.5px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- Device tools ---------- */
+/* Two columns of label + value. A readout, not a form: nothing here is
+   editable, so it reads as a status block instead of a settings page. */
+.tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
+.tools-grid > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.tools-grid span { font-size: 12.5px; color: var(--textMuted); }
+.tools-grid strong { font-size: 13px; font-weight: 600; color: var(--text); font-family: 'JetBrains Mono', Consolas, monospace; }
+.tools-grid.is-unreachable strong { color: var(--textMuted); }
+
+/* ---------- Apps of one device ----------
+   A grid of icons like a phone's app drawer: the picture and the name, and
+   the state as a small chip under it. */
+.home-pane .view.view-wide { max-width: none; padding: 18px 28px 28px; }
+/* The row of tabs is only for mirrors: with none open it would be an empty
+   band across the top, so it goes until the first mirror opens. */
+.tabstrip:has(.mirror-tabs:empty) { display: none; }
+/* The phone's page: its own column of options on the left, the chosen
+   screen on the right. The column stays in view while the apps scroll. */
+.device-page { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 28px; align-items: start; }
+.device-nav { position: sticky; top: 12px; display: flex; flex-direction: column; gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px 8px; }
+.device-nav-head { padding: 4px 8px 12px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+.device-nav-alias { font-size: 15px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
+.device-nav-state { font-size: 12.5px; margin-top: 3px; color: var(--textMuted); }
+.device-nav-head button { width: 100%; margin-top: 10px; padding: 8px 12px; font-size: 13px; }
+.device-nav-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--textMuted); padding: 12px 8px 4px; }
+.device-nav-item { display: block; width: 100%; text-align: left; background-image: none; background-color: transparent; border: none; border-radius: 9px; padding: 8px 10px; color: var(--text); font-size: 13px; font-weight: 500; }
+.device-nav-item:hover { background-color: var(--chipBg); filter: none; }
+.device-nav-item.active { background-color: var(--hoverChip); color: var(--accent); font-weight: 600; }
+.device-nav-item.danger { color: var(--danger); margin-top: 10px; border-top: 1px solid var(--border); border-radius: 0 0 9px 9px; padding-top: 12px; }
+.device-nav-item.danger:hover { background-color: var(--dangerBgHover); }
+.device-panel { display: none; min-width: 0; }
+.device-panel.active { display: block; }
+.device-nav-head input.device-alias-input { width: 100%; }
+.apps-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.apps-toolbar button.secondary { padding: 8px 14px; font-size: 13px; }
+#appsSearch, #appsStoreQuery { flex: 1 1 220px; min-width: 0; height: 36px; margin: 0; padding: 0 12px; border-radius: 10px; font-size: 13.5px; }
+#appsSearch:focus, #appsStoreQuery:focus { border-color: var(--accent); }
+.apps-store { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.apps-store button { padding: 8px 14px; font-size: 13px; flex: 0 0 auto; }
+.apps-status { font-size: 13px; color: var(--textMuted); min-height: 20px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+.apps-status .status-dot-spin { width: 14px; height: 14px; border-width: 2px; }
+.apps-status.is-error { color: var(--danger); white-space: pre-line; }
+.apps-selbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 14px; margin-bottom: 12px; border-radius: 12px; background: var(--chipBg); border: 1px solid var(--border); font-size: 13px; font-weight: 600; }
+.apps-selbar button { padding: 7px 12px; font-size: 12.5px; border-radius: 10px; }
+.apps-selbar-spacer { flex: 1; }
+.app-tile { position: relative; }
+.apps-grid.select-mode .app-tile::after { content: ''; position: absolute; top: 8px; right: 10px; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--textMuted); }
+.app-tile.selected { background-color: var(--hoverChip); border-color: var(--accent); }
+.app-tile.selected::after { content: '\2713'; position: absolute; top: 8px; right: 10px; width: 18px; height: 18px; border-radius: 50%; border: none; background: var(--accent); color: var(--onAccent); font-size: 12px; line-height: 18px; text-align: center; font-weight: 700; }
+.apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 6px; }
+.app-tile { display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 14px 6px 10px; border-radius: 14px; background-image: none; background-color: transparent; border: 1px solid transparent; color: var(--text); font-weight: 500; cursor: pointer; min-width: 0; }
+.app-tile:hover, .app-tile.menu-open { background-color: var(--chipBg); border-color: var(--border); filter: none; }
+.app-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.app-icon img { width: 48px; height: 48px; display: block; }
+.app-icon.placeholder { background: var(--chipBg); color: var(--textMuted); font-size: 18px; font-weight: 700; }
+.app-tile.is-off .app-icon, .app-tile.is-blocked .app-icon { filter: grayscale(1); opacity: 0.55; }
+.app-name { font-size: 12.5px; line-height: 1.3; text-align: center; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
+.app-chip { font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--warnChip); color: var(--warn); }
+.app-chip.is-protected { background: var(--chipBg); color: var(--textMuted); }
+.app-chip.is-pin { background: var(--chipBg); color: var(--accent); }
+.pin-input { width: 100%; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--inputBg); color: var(--text); font-size: 15px; letter-spacing: 0.2em; margin-bottom: 10px; outline: none; }
+.pin-input:focus { border-color: var(--accent); }
+.profile-list { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; margin: -8px 0 18px; }
+.profile-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; font-size: 13.5px; }
+.profile-row.active { border-color: var(--accent); background: var(--chipBg); }
+.profile-row .profile-name { font-weight: 600; color: var(--text); flex: 1; }
+.profile-row .profile-sub { font-size: 12px; color: var(--textMuted); }
+.profile-row button { width: auto; margin: 0; padding: 4px 10px; font-size: 12px; }
+#nameInput { margin-bottom: 8px; }
+.dm-selection-actions + .dm-selection-actions { margin-top: 2px; }
+.pin-error { font-size: 13px; color: var(--danger); min-height: 18px; margin-bottom: 10px; }
+.apps-menu { position: fixed; z-index: 50; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 12px 30px -8px rgba(0,0,0,0.4); min-width: 230px; overflow: hidden; }
+.apps-menu .apps-menu-head { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.apps-menu .apps-menu-name { font-size: 13.5px; font-weight: 700; color: var(--text); }
+.apps-menu .apps-menu-sub { font-size: 11.5px; color: var(--textMuted); font-family: 'JetBrains Mono', Consolas, monospace; margin-top: 2px; overflow-wrap: anywhere; }
+.apps-menu .apps-menu-note { padding: 8px 14px; font-size: 12px; color: var(--textMuted); line-height: 1.45; border-top: 1px solid var(--border); }
+.apps-menu button { display: block; width: 100%; text-align: left; background: transparent; border: none; border-radius: 0; padding: 9px 14px; color: var(--text); font-size: 13px; font-weight: 500; }
+.apps-menu button:hover { background: var(--chipBg); filter: none; }
+.apps-menu button.group-start { border-top: 1px solid var(--border); }
+.apps-menu button.danger { color: var(--danger); }
+.apps-menu button.danger:hover { background: var(--dangerBgHover); }
+.apps-drop { display: none; position: fixed; inset: 0; z-index: 60; background: var(--scrim); align-items: center; justify-content: center; pointer-events: none; }
+.apps-drop.active { display: flex; }
+.apps-drop > div { padding: 30px 40px; border-radius: 18px; border: 2px dashed var(--accent); background: var(--surface); color: var(--text); font-size: 16px; font-weight: 600; }
+
+/* ============================================================================
+   The shell: icons | device list | tabs over panes, status bar below.
+   ========================================================================= */
+html, body { overflow: hidden; }
+.shell { display: grid; grid-template-columns: 52px 320px minmax(0, 1fr); height: 100vh; }
+
+/* ---------- Activity bar ---------- */
+.activity-bar { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; background: var(--surface); border-right: 1px solid var(--border); }
+.activity-bar .act { width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; background-image: none; background-color: transparent; color: var(--textMuted); border: none; position: relative; }
+.activity-bar .act:hover { color: var(--text); background-color: var(--chipBg); filter: none; }
+.activity-bar .act.active { color: var(--accent); }
+.activity-bar .act.active::before { content: ''; position: absolute; left: -6px; top: 9px; bottom: 9px; width: 3px; border-radius: 2px; background: var(--accent); }
+.act-spacer { flex: 1; }
+
+/* ---------- Sidebar (the device list) ---------- */
+.sidebar { display: flex; flex-direction: column; min-width: 0; background: var(--bg); border-right: 1px solid var(--border); }
+.sidebar-scroll { flex: 1; overflow-y: auto; padding: 12px 10px; }
+
+/* The list's own look, made to fit a column instead of a page. */
+.sidebar .device-list { margin-top: 4px; border-radius: 14px; }
+.sidebar .device-row { gap: 10px; padding: 12px 12px; }
+.sidebar .device-open { gap: 10px; }
+.sidebar .device-icon { width: 34px; height: 34px; border-radius: 10px; }
+.sidebar .device-alias-row { gap: 8px; flex-wrap: wrap; row-gap: 2px; }
+.sidebar .device-alias { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.sidebar .status-label { font-size: 12px; }
+.sidebar .device-ip { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar .device-actions { gap: 6px; }
+.sidebar .device-actions button { padding: 6px 10px; font-size: 12.5px; border-radius: 10px; }
+.sidebar .device-actions .device-menu-btn { width: 30px; height: 30px; }
+.sidebar .device-menu { min-width: 190px; }
+.sidebar .dm-toolbar { margin-top: 4px; gap: 8px; }
+.sidebar .dm-toolbar-row { gap: 6px; }
+.sidebar .dm-filter-select { font-size: 12px; padding: 0 6px; }
+.sidebar #dmSelectModeBtn { padding: 0 10px; font-size: 12.5px; }
+.sidebar .dm-selection-bar { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+.dm-selection-actions { display: flex; gap: 6px; width: 100%; }
+.dm-selection-actions button { flex: 1; padding: 7px 6px; font-size: 12.5px; border-radius: 10px; }
+.dm-selection-actions button.danger { background-image: none; background-color: transparent; color: var(--danger); border-color: var(--border); }
+.sidebar .empty-state { padding: 36px 8px 20px; }
+.sidebar .empty-state-body { font-size: 13px; margin-bottom: 18px; }
+
+/* ---------- Workspace: tab strip, panes, status bar ---------- */
+.workspace { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.tabstrip { display: flex; align-items: stretch; gap: 2px; height: 42px; padding: 0 8px; background: var(--surface); border-bottom: 1px solid var(--border); flex: 0 0 auto; }
+.mirror-tabs { display: flex; align-items: stretch; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
+.tab { display: flex; align-items: center; gap: 8px; padding: 0 12px; margin: 6px 0; border-radius: 9px; background-image: none; background-color: transparent; color: var(--textMuted); border: 1px solid transparent; font-size: 13px; font-weight: 500; cursor: pointer; flex: 0 0 auto; max-width: 240px; user-select: none; }
+.tab:hover { color: var(--text); background-color: var(--chipBg); filter: none; }
+.tab.active { color: var(--text); background-color: var(--chipBg); border-color: var(--border); }
+.tab-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.tab-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--neutral); flex: 0 0 auto; }
+.mirror-tab[data-state="live"] .tab-dot { background: var(--success); }
+.mirror-tab[data-state="starting"] .tab-dot, .mirror-tab[data-state="switching"] .tab-dot { background: var(--accent); }
+.mirror-tab[data-state="window"] .tab-dot { background: transparent; box-shadow: inset 0 0 0 1.5px var(--success); }
+.mirror-tab[data-state="closed"] .tab-label { text-decoration: line-through; opacity: 0.7; }
+.tab-btn { width: 22px; height: 22px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; background-image: none; background-color: transparent; color: var(--textMuted); border: none; flex: 0 0 auto; }
+.tab-btn:hover:not(:disabled) { color: var(--text); background-color: var(--hoverChip); filter: none; }
+.tab-btn:disabled { opacity: 0.3; }
+
+.panes { flex: 1; position: relative; min-height: 0; }
+.pane { position: absolute; inset: 0; display: none; }
+.pane.active { display: block; }
+.home-pane { overflow-y: auto; }
+.home-pane .view { max-width: 880px; }
+.mirror-pane { background: #000; }
+.mirror-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: none; display: block; background: #000; }
+.mirror-overlay { position: absolute; inset: 0; display: none; place-items: center; z-index: 2; background: #06080c; }
+.mirror-pane:not([data-state="live"]) .mirror-overlay { display: grid; }
+.mirror-card { width: min(440px, 90%); padding: 26px; border-radius: 16px; text-align: center; background: #15171c; border: 1px solid #2b2f38; color: #e8eaef; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.mirror-card .status-dot-spin { border-color: #2b2f38; border-top-color: #65e7ff; }
+.mirror-card-title { font-size: 15.5px; font-weight: 600; }
+.mirror-card-body { font-size: 13px; color: #a9b0bd; line-height: 1.55; overflow-wrap: anywhere; }
+.mirror-card-buttons { display: flex; gap: 10px; margin-top: 8px; }
+.mirror-card-buttons button { padding: 9px 14px; font-size: 13px; }
+.mirror-card-buttons button.secondary { color: #e8eaef; border-color: #3a4150; }
+
+.statusbar { display: flex; align-items: center; gap: 16px; height: 26px; padding: 0 12px; flex: 0 0 auto; background: var(--surface); border-top: 1px solid var(--border); font-size: 12px; color: var(--textMuted); white-space: nowrap; overflow: hidden; }
+.statusbar-spacer { flex: 1; }
+
+/* ---------- Home ---------- */
+.home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin: 6px 0 28px; }
+.home-card { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left; padding: 18px; border-radius: 16px; background-image: none; background-color: var(--surface); color: var(--accent); border: 1px solid var(--border); font-weight: 500; }
+.home-card:hover { border-color: var(--accent); filter: none; }
+.home-card-title { font-size: 14.5px; font-weight: 700; color: var(--text); }
+.home-card-body { font-size: 12.5px; color: var(--textMuted); line-height: 1.5; font-weight: 400; }
+.home-section { margin-bottom: 10px; }
+.good-to-know { margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--textMuted); line-height: 1.6; }
+.good-to-know li { margin-bottom: 8px; }
+.kbd { display: inline-block; padding: 0 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font-family: 'JetBrains Mono', Consolas, ui-monospace, monospace; font-size: 11.5px; line-height: 1.7; }

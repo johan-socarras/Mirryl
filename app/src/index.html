@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mirryl</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============ The shell ============
+     One window, laid out like a workspace: a strip of icons on the far left,
+     the device list next to it, and on the right a row of tabs - Home, plus
+     one per open mirror - over whatever that tab shows. A mirror can leave its
+     tab for a window of its own and come back without restarting. -->
+<div class="shell">
+
+  <nav class="activity-bar" aria-label="Main">
+    <!-- Home lives here, not in the row of tabs: that row is only for mirrors. -->
+    <button class="act active" id="homeTab" title="Home" aria-label="Home">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9v11h13V9"/></svg>
+    </button>
+    <button class="act" id="actAdd" title="Add device" aria-label="Add device">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <div class="act-spacer"></div>
+    <button class="act" id="actLicenses" title="About and licenses" aria-label="About and licenses">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="0.6" fill="currentColor"/></svg>
+    </button>
+    <button class="act" id="settingsBtn" title="Settings" aria-label="Settings">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </nav>
+
+  <!-- ============ The device list ============ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-scroll">
+      <div class="empty-state" id="dmEmptyState">
+        <!-- Rewritten by renderUsbNudge when a phone is found on the cable: a
+             cabled phone needs no pairing, so the offer belongs HERE, where the
+             user is already looking for what to do next. -->
+        <div class="empty-state-title" id="emptyTitle">No devices yet</div>
+        <div class="empty-state-body" id="emptyBody">Add your first Android device to connect and control it over your local network.</div>
+        <button id="addDeviceBtnEmpty">+ Add device</button>
+        <button id="usbNudgeBtn" style="display:none;">Add device</button>
+      </div>
+
+      <!-- Search/filter/sort + bulk actions. Only shown with 2+ devices: with
+           one device there is nothing to search or bulk-act on. Bulk actions
+           act on the CHECKED rows, never on "everything registered". -->
+      <div class="dm-toolbar" id="dmToolbar" style="display:none;">
+        <input type="text" id="dmSearchInput" class="dm-search-input" placeholder="Search by name, serial or IP...">
+        <div class="dm-toolbar-row">
+          <select id="dmStatusFilter" class="dm-filter-select" aria-label="Filter by status">
+            <option value="all">All statuses</option>
+            <option value="usb">Connected by USB</option>
+            <option value="wifi">Connected by Wi-Fi</option>
+            <option value="disconnected">Disconnected</option>
+          </select>
+          <select id="dmSortSelect" class="dm-filter-select" aria-label="Sort">
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+            <option value="last-seen">Last seen (most recent first)</option>
+            <option value="added-desc">Date added (newest first)</option>
+            <option value="added-asc">Date added (oldest first)</option>
+          </select>
+          <button id="dmSelectModeBtn">Select</button>
+        </div>
+      </div>
+
+      <div class="dm-selection-bar" id="dmSelectionBar" style="display:none;">
+        <label class="dm-select-all">
+          <input type="checkbox" id="dmSelectAll" class="device-select-checkbox"
+                 title="Select every device shown" aria-label="Select every device shown">
+          <span id="dmSelectionCount">0 selected</span>
+        </label>
+        <button class="ghost" id="dmSelectionCancelBtn">Done</button>
+        <div class="dm-selection-actions">
+          <button id="dmBulkSendFileBtn">Send file</button>
+          <button id="dmBulkRestartBtn">Restart</button>
+          <button class="danger" id="dmSelectionRemoveBtn">Remove</button>
+        </div>
+        <div class="dm-selection-actions">
+          <button id="dmBulkInstallBtn" title="Install .apk files on every selected phone">Install APK</button>
+          <button id="dmBulkProfileBtn" title="Apply a saved profile to every selected phone">Apply profile</button>
+          <button id="dmBulkExportBtn" title="Save the apps of every selected phone in one CSV file for Excel">Export apps</button>
+        </div>
+      </div>
+
+      <div class="device-list" id="dmDeviceList" style="display:none;"></div>
+    </div>
+  </aside>
+
+  <!-- ============ Tabs and what they show ============ -->
+  <main class="workspace">
+    <div class="tabstrip" id="tabStrip" role="tablist">
+      <div class="mirror-tabs" id="mirrorTabs"></div>
+    </div>
+
+    <div class="panes" id="panes">
+      <div class="pane home-pane active" id="homePane">
+
+<!-- ============ VIEW: Home ============ -->
+<div class="view active" id="view-home">
+  <div class="view-header">
+    <div>
+      <div class="eyebrow">Mirryl</div>
+      <h1 class="view-title">Your phones, on this PC</h1>
+      <div class="view-subtitle">Click a phone in the list to open its screen in a tab. Each tab can go to a window of its own and come back.</div>
+    </div>
+  </div>
+
+  <!-- Windows setup notice. Shown only when a read-only check finds something
+       actually broken: the firewall rules for this exe are missing/blocked, or
+       the auto-reconnect watcher is gone, disabled, or pointing at a folder
+       that no longer exists. Repair is the ONLY thing in the app that asks for
+       administrator, and only when pressed. -->
+  <div class="system-notice" id="systemNotice" style="display:none;">
+    <p id="systemNoticeText"></p>
+    <div class="notice-actions">
+      <button id="systemNoticeBtn">Repair</button>
+      <button class="ghost" id="systemNoticeDismissBtn">Not now</button>
+    </div>
+  </div>
+
+  <div class="home-grid">
+    <button class="home-card" id="homeAddCard">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      <span class="home-card-title">Add a device</span>
+      <span class="home-card-body">Pair a phone over Wi-Fi with a QR code or a six-digit code, or plug it in by USB.</span>
+    </button>
+    <button class="home-card" id="homeSettingsCard">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+      <span class="home-card-title">Settings</span>
+      <span class="home-card-body">Light or dark, and the keyboard shortcuts the mirror uses.</span>
+    </button>
+    <button class="home-card" id="homeLicensesCard">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="0.6" fill="currentColor"/></svg>
+      <span class="home-card-title">About and licenses</span>
+      <span class="home-card-body">Version, license, privacy notice and third-party notices.</span>
+    </button>
+  </div>
+
+  <div class="section-label home-section">Good to know</div>
+  <ul class="good-to-know">
+    <li><span class="kbd">Click</span> a phone on the left to open it in a tab; click it again to come back to that tab.</li>
+    <li><span class="kbd">⧉</span> on a tab moves that mirror to a window of its own, without reconnecting. <span class="kbd">⇲</span> brings it back.</li>
+    <li>In a mirror, <span class="kbd">Right-click</span> is Back and <span class="kbd">Middle-click</span> is Home. More shortcuts in Settings.</li>
+  </ul>
+</div>
+
+<!-- ============ VIEW: Setup Assistant (wizard) ============ -->
+<div class="view" id="view-wizard">
+  <div class="view-header">
+    <div>
+      <div class="eyebrow">Setup Assistant</div>
+      <h1 class="view-title" id="wizStepTitle">Pair with the phone</h1>
+      <div class="view-subtitle" id="wizStepSubtitle">Choose whichever is faster for you - both work the same way.</div>
+    </div>
+    <div class="tabs">
+      <button id="wizTab1" class="active">Step 1</button>
+      <button id="wizTab2">Step 2</button>
+    </div>
+  </div>
+
+  <div class="progress-track" id="progressTrack"></div>
+  <div class="counter" id="counter">Step 1 of 2</div>
+
+  <!-- Step 1 -->
+  <div class="wiz-step" data-step="1">
+    <!-- The phone-side steps: Mirryl on the PC installs the phone app, so the
+         guide for turning on Wireless debugging lives here. -->
+    <details class="card setup-help">
+      <summary>First time? Turn on Wireless debugging on the phone</summary>
+      <ol class="hint">
+        <li>Turn on <b>Developer options</b>: go to Settings &gt; About phone and tap <b>Build number</b> 7 times. On some phones it is under Settings &gt; About phone &gt; Software information.</li>
+        <li>Go to Settings &gt; System &gt; Developer options (on Samsung, Settings &gt; Developer options) &gt; <b>Wireless debugging</b>, and turn it on.</li>
+        <li>Keep the phone on the same Wi-Fi network as this computer, then pair with one of the two options below.</li>
+      </ol>
+    </details>
+    <div class="card card-row">
+      <div>
+        <div class="card-icon-row">
+          <div class="card-icon-chip">
+            <div style="width:14px; height:14px; border:1.6px solid var(--accent); display:grid; grid-template-columns:1fr 1fr; gap:1.5px; padding:1.5px;">
+              <div style="background:var(--accent);"></div><div></div><div></div><div style="background:var(--accent);"></div>
+            </div>
+          </div>
+          <div class="card-icon-title">Scan QR code</div>
+        </div>
+        <p class="hint">Open Wireless debugging &gt; Pair device with QR code on the phone, then point the camera at this code.</p>
+        <div class="qr-box" id="qrBox">
+          <span style="font-size:12px; color:var(--textMuted);" id="qrPlaceholder">Generating...</span>
+          <img id="qrImage" style="display:none; width:100%; height:100%; object-fit:contain;" alt="QR pairing code">
+        </div>
+        <div class="output" id="qrStatus"></div>
+      </div>
+      <div>
+        <div class="card-icon-row">
+          <div class="card-icon-chip">
+            <div style="width:14px; height:10px; border:1.6px solid var(--accent); border-radius:2px;"></div>
+          </div>
+          <div class="card-icon-title">Enter manually</div>
+        </div>
+        <p class="hint">Wireless debugging &gt; Pair device with pairing code. Enter that IP:Port and the 6-digit code below.</p>
+        <div class="field-label">Pairing IP:Port</div>
+        <input type="text" id="pairHostPort" placeholder="192.168.0.7:37251">
+        <div class="field-label">6-digit pairing code</div>
+        <input type="text" id="pairCode" class="code-input" placeholder="000000">
+        <button id="pairBtn" style="width:100%;">Pair device</button>
+        <div class="output" id="pairOutput"></div>
+      </div>
+    </div>
+    <div class="card trouble-block" id="pairTroubleBlock" style="display:none;">
+      <p class="hint">Still failing after the automatic retry? Try these, then Pair again.</p>
+      <div class="btn-row">
+        <button class="secondary" id="firewallBtn1">Fix connection issues</button>
+        <button class="secondary" id="restartAdbBtn1">Restart ADB</button>
+      </div>
+      <div class="output" id="firewallOutput1"></div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="wiz-step" data-step="2" style="display:none;">
+    <div class="card">
+      <div class="card-icon-row">
+        <div class="card-icon-chip lg">
+          <div class="status-dot-spin"></div>
+        </div>
+        <div>
+          <div class="card-icon-title">Searching for the device on your network</div>
+          <p class="hint" style="margin:3px 0 0;">Using the IP:Port shown on the phone's Wireless debugging screen.</p>
+        </div>
+      </div>
+      <div class="field-label">Connect IP:Port (only needed if not found automatically)</div>
+      <input type="text" id="connectHostPort" placeholder="192.168.0.7:40449">
+      <div class="btn-row">
+        <button id="connectBtn">Connect &amp; grant permission</button>
+        <button class="secondary" id="discoverBtn">Auto-discover</button>
+      </div>
+      <div class="output" id="connectOutput"></div>
+    </div>
+    <div class="card trouble-block" id="phoneAppBlock" style="display:none;">
+      <p class="hint" id="phoneAppHint"></p>
+      <div class="btn-row">
+        <button id="phoneAppBtn">Install the Mirryl app on the phone</button>
+      </div>
+      <div class="output" id="phoneAppOutput"></div>
+    </div>
+    <details class="card setup-help">
+      <summary>Optional: silence the "Wireless debugging connected" notification</summary>
+      <p class="hint">Android shows this notification every time Wireless debugging turns on. On the phone, long-press it once, tap the gear icon, and turn off sound and vibration for that channel. It stays quietly in the notification shade - Android does not allow hiding it completely - but it no longer pops up or makes noise. The setting survives reboots.</p>
+    </details>
+    <div class="card trouble-block" id="connectTroubleBlock" style="display:none;">
+      <p class="hint">Still failing after the automatic retry? Try these, then Connect again.</p>
+      <div class="btn-row">
+        <button class="secondary" id="firewallBtn2">Fix connection issues</button>
+        <button class="secondary" id="restartAdbBtn2">Restart ADB</button>
+      </div>
+      <div class="output" id="firewallOutput2"></div>
+    </div>
+  </div>
+
+  <div class="btn-row" style="margin-bottom:24px;">
+    <button class="secondary" id="wizHomeBtn" style="flex:0 0 140px;">Home</button>
+    <div style="flex:1;"></div>
+    <button class="secondary" id="backBtn" style="flex:0 0 140px;">Back</button>
+    <button id="nextBtn" style="flex:0 0 140px;">Next</button>
+  </div>
+
+  <div class="log-card">
+    <div class="log-header">
+      <div class="log-dot"></div>
+      <span>LIVE STATUS &middot; adb devices</span>
+    </div>
+    <div class="log-body" id="statusOutput">Checking...</div>
+  </div>
+
+</div>
+
+<!-- ============ VIEW: One device ============
+     The page the ⋮ of a row opens. On the left, everything about that phone:
+     its name and state, the two screens (Apps, Info) and the actions that used
+     to live in the row's menu. On the right, the screen chosen. Filled by
+     main.js (Device page and Apps sections). APK files dropped anywhere on the
+     Apps screen are installed on the phone. -->
+<div class="view view-wide" id="view-device">
+  <div class="device-page">
+    <nav class="device-nav" aria-label="This phone">
+      <div class="device-nav-head">
+        <div class="device-nav-alias" id="devAlias">Device</div>
+        <div class="device-nav-state" id="devState"></div>
+        <button id="devMirrorBtn">Mirror</button>
+      </div>
+      <div class="device-nav-label">Screens</div>
+      <button class="device-nav-item" data-panel="apps">Apps</button>
+      <button class="device-nav-item" data-panel="info">Info</button>
+      <div class="device-nav-label">Actions</div>
+      <button class="device-nav-item" data-action="send">Send file</button>
+      <button class="device-nav-item" data-action="restart">Restart device</button>
+      <button class="device-nav-item" data-action="reinstall">Reinstall the Mirryl app</button>
+      <button class="device-nav-item" data-action="pin">PIN for protected apps…</button>
+      <button class="device-nav-item" data-action="profile-save">Save as profile…</button>
+      <button class="device-nav-item" data-action="profile-apply">Apply a profile…</button>
+      <button class="device-nav-item" data-action="export">Export apps (CSV)</button>
+      <button class="device-nav-item" data-action="alias">Edit alias</button>
+      <button class="device-nav-item" data-action="repair">Re-pair this device</button>
+      <button class="device-nav-item" data-action="forget" id="devForgetBtn">Forget Wi-Fi address</button>
+      <button class="device-nav-item danger" data-action="remove">Remove device</button>
+    </nav>
+
+    <section class="device-panel" id="devPanelApps">
+      <div class="view-header">
+        <div>
+          <div class="eyebrow">Apps</div>
+          <h1 class="view-title" id="appsTitle">Device</h1>
+          <div class="view-subtitle">Click an app to open it on the phone. Right-click it to block it, turn it off, delete its data, uninstall it or keep a copy. Drop .apk files here to install them.</div>
+        </div>
+      </div>
+
+      <div class="apps-toolbar">
+        <input type="text" id="appsSearch" placeholder="Search apps" autocomplete="off">
+        <div class="tabs" id="appsFilter">
+          <button data-filter="drawer" class="active">Apps</button>
+          <button data-filter="user">Installed</button>
+          <button data-filter="system">System</button>
+          <button data-filter="blocked">Blocked or off</button>
+        </div>
+        <button class="secondary" id="appsInstallBtn">Install an APK…</button>
+        <button class="secondary" id="appsSelectBtn" title="Select several apps to block, unblock or protect them together. Ctrl+click and Shift+click also select.">Select</button>
+        <button class="secondary" id="appsRefreshBtn">Refresh</button>
+      </div>
+
+      <div class="apps-store">
+        <input type="text" id="appsStoreQuery" placeholder="Find an app on the Play Store of the phone" autocomplete="off">
+        <button class="secondary" id="appsStoreBtn">Open in Play Store</button>
+      </div>
+
+      <div class="apps-status" id="appsStatus"></div>
+      <div class="apps-selbar" id="appsSelBar" style="display:none;">
+        <span id="appsSelCount">0 selected</span>
+        <button class="ghost" id="appsSelAll">Select all shown</button>
+        <span class="apps-selbar-spacer"></span>
+        <button class="secondary" data-bulk="block">Block</button>
+        <button class="secondary" data-bulk="unblock">Unblock</button>
+        <button class="secondary" data-bulk="pin">Protect with PIN</button>
+        <button class="secondary" data-bulk="unpin">Remove the PIN</button>
+        <button class="ghost" id="appsSelDone">Done</button>
+      </div>
+      <div class="apps-grid" id="appsGrid"></div>
+    </section>
+
+    <section class="device-panel" id="devPanelInfo">
+      <div class="view-header">
+        <div>
+          <div class="eyebrow">Info</div>
+          <h1 class="view-title" id="toolsTitle">Device</h1>
+          <div class="view-subtitle">The state of this phone, read over the connection you already have.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-label">Status</div>
+        <div class="tools-grid" id="toolsInfo">
+          <div><span>Battery</span><strong id="infoBattery">…</strong></div>
+          <div><span>Storage</span><strong id="infoStorage">…</strong></div>
+          <div><span>Android</span><strong id="infoAndroid">…</strong></div>
+          <div><span>Model</span><strong id="infoModel">…</strong></div>
+          <div><span>Serial</span><strong id="infoSerial">…</strong></div>
+          <div><span>Uptime</span><strong id="infoUptime">…</strong></div>
+          <div><span>IP address</span><strong id="infoIp">…</strong></div>
+        </div>
+        <div class="btn-row" style="margin-top:16px;">
+          <button class="secondary" id="toolsRefreshBtn" style="flex:0 0 auto;">Refresh</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="apps-menu" id="appsMenu" style="display:none;"></div>
+  <div class="apps-drop" id="appsDrop"><div>Drop the .apk files to install them on <span id="appsDropName">the phone</span></div></div>
+</div>
+
+<!-- ============ VIEW: Settings ============
+     The shortcuts table is filled in from SHORTCUT_ACTIONS in main.js: a new
+     action is a new row there, not new markup here. -->
+<div class="view" id="view-settings">
+  <a class="back-link" id="settingsBackLink">&larr; Home</a>
+
+  <div class="view-header">
+    <div>
+      <div class="eyebrow">Settings</div>
+      <h1 class="view-title">Settings</h1>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Appearance</div>
+    <div class="setting-row">
+      <div class="setting-text">
+        <div class="setting-name">Theme</div>
+        <div class="setting-desc">Mirryl keeps this choice; it does not follow Windows.</div>
+      </div>
+      <div class="tabs" id="themeChoice">
+        <button data-theme-value="light">Light</button>
+        <button data-theme-value="dark">Dark</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Keyboard shortcuts</div>
+    <p class="hint">
+      These work in a mirror, in its tab or in its own window. Changing one
+      applies to mirrors you open afterwards &mdash; a mirror already open keeps
+      the shortcut it started with.
+    </p>
+    <div id="shortcutList"></div>
+    <div class="output" id="shortcutMessage" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- ============ VIEW: Licenses / About ============ -->
+<div class="view" id="view-licenses">
+  <a class="back-link" id="backToDevicesLink">&larr; Home</a>
+
+  <div class="about-header">
+    <img src="icon.png" alt="Mirryl">
+    <div>
+      <div class="name">Mirryl</div>
+      <div class="ver" id="aboutVersion">Version</div>
+      <a id="repoLink">github.com/johan-socarras/Mirryl</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Third-party licenses</div>
+    <div class="license-entry">
+      <div>
+        <div class="lib-name">Android Debug Bridge (adb)</div>
+        <div class="lib-desc">Connection, transport and six-digit-code pairing use adb from the Android Open Source Project, licensed under the Apache License 2.0. QR-code pairing is Mirryl's own implementation of the Android pairing protocol, developed from those same Apache-2.0 sources. Screen mirroring &amp; control is Mirryl's own engine.</div>
+      </div>
+      <a id="viewFullLicenseLink">View full license &rarr;</a>
+    </div>
+    <div class="license-entry">
+      <div>
+        <div class="lib-name">MPL-2.0 source code</div>
+        <div class="lib-desc">One linked component (option-ext) is licensed under the Mozilla Public License 2.0, which requires its source to stay available. It ships in this folder, unmodified, so that availability never depends on an external link.</div>
+      </div>
+      <a id="mplSourceLink">Show in folder &rarr;</a>
+    </div>
+    <div class="license-entry">
+      <div>
+        <div class="lib-name">Component inventory</div>
+        <div class="lib-desc">Every third-party component's version, license and copyright notice - too many to list on this screen - is in COMPONENT-INVENTORY.txt, part of this same notice.</div>
+      </div>
+      <a id="componentInventoryLink">Show in folder &rarr;</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Legal</div>
+    <div class="license-entry">
+      <div>
+        <div class="lib-name">License and terms</div>
+        <div class="lib-desc">Mirryl's license, the PolyForm Shield License 1.0.0, and its terms. Ships alongside the app as EULA.txt.</div>
+      </div>
+      <a id="eulaLink">Show in folder &rarr;</a>
+    </div>
+    <div class="license-entry">
+      <div>
+        <div class="lib-name">Privacy notice</div>
+        <div class="lib-desc">What Mirryl does with your data. Ships alongside the app as PRIVACY.txt.</div>
+      </div>
+      <a id="privacyLink">Show in folder &rarr;</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Help</div>
+    <div class="license-entry">
+      <div>
+        <div class="lib-name">User guide</div>
+        <div class="lib-desc">What every screen and button of Mirryl does, with pictures. Ships alongside the app as Mirryl-User-Guide.pdf.</div>
+      </div>
+      <a id="userGuideLink">Open &rarr;</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ VIEW: License full text (own screen, not a cramped box -
+     the license text has its own hard line breaks at 77 columns, so it
+     needs real width, not a card fighting for space with everything else
+     on the Licenses screen) ============ -->
+<div class="view" id="view-license-full">
+  <a class="back-link" id="backFromLicenseFullLink">&larr; Back to licenses</a>
+  <div class="card">
+    <div class="section-label">Third-party licenses — full text</div>
+    <pre class="license-full-text" id="licenseFullText">Loading...</pre>
+  </div>
+</div>
+
+      </div><!-- /homePane: mirror panes are added after it -->
+    </div>
+
+    <footer class="statusbar">
+      <span id="statusDevices">No devices</span>
+      <span class="statusbar-spacer"></span>
+      <span id="statusActive"></span>
+      <span id="statusVersion"></span>
+    </footer>
+  </main>
+</div><!-- /shell -->
+
+<!-- ============ Generic confirm dialog (replaces native confirm()) ============ -->
+<div class="modal-overlay" id="confirmOverlay">
+  <div class="modal-card">
+    <div class="title" id="confirmTitle">Are you sure?</div>
+    <div class="body" id="confirmBody"></div>
+    <label class="confirm-checkbox-row" id="confirmCheckboxRow" style="display:none;">
+      <input type="checkbox" id="confirmCheckbox">
+      <span id="confirmCheckboxLabel"></span>
+    </label>
+    <button id="confirmOkBtn">OK</button>
+    <button class="ghost" id="confirmCancelBtn">Cancel</button>
+  </div>
+</div>
+
+<!-- ============ Name dialog: the name of a profile ============ -->
+<div class="modal-overlay" id="nameOverlay">
+  <div class="modal-card">
+    <div class="title" id="nameTitle">Name</div>
+    <div class="body" id="nameBody"></div>
+    <input type="text" id="nameInput" maxlength="60" autocomplete="off">
+    <div class="pin-error" id="nameError"></div>
+    <button id="nameOkBtn">Save</button>
+    <button class="ghost" id="nameCancelBtn">Cancel</button>
+  </div>
+</div>
+
+<!-- ============ Profile dialog: choosing a profile to apply ============ -->
+<div class="modal-overlay" id="profileOverlay">
+  <div class="modal-card">
+    <div class="title" id="profileTitle">Apply a profile</div>
+    <div class="body" id="profileBody"></div>
+    <div class="profile-list" id="profileList"></div>
+    <label class="confirm-checkbox-row">
+      <input type="checkbox" id="profileExact">
+      <span>Make the phone exactly like the profile: also unblock and take the PIN off the apps it does not name</span>
+    </label>
+    <div class="pin-error" id="profileError"></div>
+    <button id="profileApplyBtn">Apply</button>
+    <button class="ghost" id="profileCancelBtn">Cancel</button>
+  </div>
+</div>
+
+<!-- ============ PIN dialog: choosing the PIN of a phone's protected apps ============ -->
+<div class="modal-overlay" id="pinOverlay">
+  <div class="modal-card">
+    <div class="title" id="pinTitle">Choose a PIN</div>
+    <div class="body" id="pinBody"></div>
+    <input type="password" id="pinInput" class="pin-input" inputmode="numeric" maxlength="12" placeholder="PIN (4 to 12 digits)" autocomplete="off">
+    <input type="password" id="pinInput2" class="pin-input" inputmode="numeric" maxlength="12" placeholder="The same PIN again" autocomplete="off">
+    <div class="pin-error" id="pinError"></div>
+    <button id="pinOkBtn">Set PIN</button>
+    <button class="ghost" id="pinCancelBtn">Cancel</button>
+  </div>
+</div>
+
+<script src="main.js"></script>
+</body>
+</html>
