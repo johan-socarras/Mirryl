@@ -26,7 +26,7 @@ packages the other two.
   winget install --id BrechtSanders.WinLibs.POSIX.MSVCRT -e
   ```
 
-- **Tauri CLI 2**: `cargo install tauri-cli --version "^2"`.
+- **Tauri CLI 2.11**: `cargo install tauri-cli --version "=2.11.4" --locked`. The installer template is written for its NSIS bundler; later versions stop with `macro named "RestartManager_StartSession" not found`.
 - **JDK** (17 or newer) and the **Android SDK** with one `build-tools` and one
   `platforms` package installed (Android Studio's SDK Manager is the easy way).
   No Gradle is needed.

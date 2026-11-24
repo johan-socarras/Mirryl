@@ -66,9 +66,14 @@ jobs:
           - name: Ubuntu
             os: ubuntu-24.04
             bundle: deb
+            tauri-cli: '2'
+          # The installer template (app/src-tauri/installer-template.nsi) is
+          # written for the NSIS bundler of Tauri CLI 2.11; later ones expect
+          # macros it does not define.
           - name: Windows
             os: windows-latest
             bundle: nsis
+            tauri-cli: '2.11.4'
     runs-on: ${{ matrix.os }}
     env:
       # One target folder for the engine and the app: the app's build picks
@@ -134,4 +139,4 @@ jobs:
 
       - name: Package
         working-directory: app
-        run: npx --yes @tauri-apps/cli@2 build --bundles ${{ matrix.bundle }} -- --locked
+        run: npx --yes @tauri-apps/cli@${{ matrix.tauri-cli }} build --bundles ${{ matrix.bundle }} -- --locked
