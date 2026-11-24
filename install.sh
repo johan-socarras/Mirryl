@@ -54,7 +54,7 @@ main() {
     # n-th size, digest and URLs all belong to the n-th asset.
     local sizes digests urls apis
     sizes=$(printf '%s' "$release" | grep -oE '"size": *[0-9]+' | grep -oE '[0-9]+$' || true)
-    digests=$(printf '%s' "$release" | grep -oE '"digest": *(null|"[^"]*")' | sed -E 's/.*: *"?([^"]*)"?$/\1/' || true)
+    digests=$(printf '%s' "$release" | grep -oE '"digest": *(null|"[^"]*")' | sed -E 's/^"digest": *//; s/"//g' || true)
     urls=$(printf '%s' "$release" | grep -oE '"browser_download_url": *"[^"]*"' | sed -E 's/.*"([^"]*)"$/\1/' || true)
     apis=$(printf '%s' "$release" | grep -oE '"url": *"https://api\.github\.com/repos/[^"]*/releases/assets/[0-9]+"' | sed -E 's/.*"([^"]*)"$/\1/' || true)
     local tag
@@ -72,7 +72,8 @@ main() {
 
     local folder
     folder=$(mktemp -d)
-    trap 'rm -rf "$folder"' EXIT
+    # Expanded now: the trap runs after main returns, when $folder is gone.
+    trap "rm -rf '$folder'" EXIT
     chmod 755 "$folder"   # apt reads the package as its own _apt user
     local deb="$folder/$name"
 
