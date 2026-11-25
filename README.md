@@ -30,6 +30,13 @@ and do the same on several phones at once.
 Mirryl is free. It has no account, no activation and no telemetry: it does
 not connect to the internet.
 
+## Contents
+
+[Install](#install) · [Features](#features) · [Requirements](#requirements) ·
+[Install from the release](#install-from-the-release) ·
+[How it works](#how-it-works) · [Building from source](#building-from-source) ·
+[Privacy](#privacy) · [Contributors](#contributors) · [License](#license)
+
 ## Install
 
 Windows 10 or 11 (64-bit), in PowerShell:
@@ -154,6 +161,12 @@ and on your phone is described in
 [`PRIVACY.txt`](app/src-tauri/PRIVACY.txt) (Windows) and
 [`PRIVACY-linux.txt`](app/src-tauri/PRIVACY-linux.txt) (Linux).
 
+## Contributors
+
+- [**johan-socarras**](https://github.com/johan-socarras): idea, design,
+  testing and direction.
+- **Claude** (Anthropic): the AI that wrote the code.
+
 ## License
 
 Mirryl is **source-available** under the
@@ -166,6 +179,6 @@ Third-party components keep their own licenses; see
 and [`THIRD_PARTY_LICENSES-linux.txt`](app/src-tauri/THIRD_PARTY_LICENSES-linux.txt)
 (Linux).
 
-Mirryl is made by one person and comes with no promise of support or
+Mirryl is a personal project and comes with no promise of support or
 updates. Bug reports and questions are welcome as
 [issues](https://github.com/johan-socarras/Mirryl/issues).
